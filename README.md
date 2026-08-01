@@ -20,6 +20,12 @@ No Dock icon, no keyboard shortcut to remember, no window management — just a 
 - **Any shell** — zsh, bash, fish, whatever `$SHELL` says (or override in config)
 - **Bundled Nerd Font** (MesloLGS) — prompt glyphs work out of the box
 
+## Why not a notch hub?
+
+Most notch apps are hubs — media controls, file shelves, HUD replacements, calendars. NotchTerm deliberately isn't one. It does exactly one thing: puts a real terminal (SwiftTerm — a genuine PTY running your actual shell, not a widget) under your notch. No Dock icon, no feature drawer, no subscription, and nothing to configure that doesn't fit in one small text file.
+
+If you live in a shell, this is the fastest path to one that exists on a Mac. If you don't, the hub apps will serve you better — and that's fine.
+
 ## Install
 
 ### Download (recommended)
