@@ -1,0 +1,389 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		10912FB02F91318C004E0158 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = 10912FAF2F91318C004E0158 /* SwiftTerm */; };
+		7A1B2C3D4E5F607182930A14 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F607182930A10 /* AppDelegate.swift */; };
+		7A1B2C3D4E5F607182930A15 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F607182930A11 /* main.swift */; };
+		7A1B2C3D4E5F607182930A21 /* NotchDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F607182930A20 /* NotchDetector.swift */; };
+		7A1B2C3D4E5F607182930A23 /* MouseMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1B2C3D4E5F607182930A22 /* MouseMonitor.swift */; };
+		7AB0B0B000000000000B0001 /* ResizeBorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB0B0B000000000000B0002 /* ResizeBorderView.swift */; };
+		A01B2C3D4E5F607182930A50 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A01B2C3D4E5F607182930A51 /* Settings.swift */; };
+		B01B2C3D4E5F607182930A60 /* MesloLGSNerdFont-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B01B2C3D4E5F607182930A61 /* MesloLGSNerdFont-Regular.ttf */; };
+		C01B2C3D4E5F607182930A71 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = C01B2C3D4E5F607182930A70 /* AppIcon.icns */; };
+		D01B2C3D4E5F607182930A81 /* WelcomeWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01B2C3D4E5F607182930A80 /* WelcomeWindowController.swift */; };
+		E01B2C3D4E5F607182930A31 /* TerminalPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01B2C3D4E5F607182930A30 /* TerminalPanel.swift */; };
+		F01B2C3D4E5F607182930A41 /* TerminalContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F01B2C3D4E5F607182930A40 /* TerminalContentView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		7A1B2C3D4E5F607182930A0F /* NotchTerm.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NotchTerm.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7A1B2C3D4E5F607182930A10 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		7A1B2C3D4E5F607182930A11 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		7A1B2C3D4E5F607182930A12 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7A1B2C3D4E5F607182930A13 /* NotchTerm.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotchTerm.entitlements; sourceTree = "<group>"; };
+		7A1B2C3D4E5F607182930A20 /* NotchDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchDetector.swift; sourceTree = "<group>"; };
+		7A1B2C3D4E5F607182930A22 /* MouseMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseMonitor.swift; sourceTree = "<group>"; };
+		7AB0B0B000000000000B0002 /* ResizeBorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResizeBorderView.swift; sourceTree = "<group>"; };
+		A01B2C3D4E5F607182930A51 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		B01B2C3D4E5F607182930A61 /* MesloLGSNerdFont-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MesloLGSNerdFont-Regular.ttf"; sourceTree = "<group>"; };
+		C01B2C3D4E5F607182930A70 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		D01B2C3D4E5F607182930A80 /* WelcomeWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeWindowController.swift; sourceTree = "<group>"; };
+		E01B2C3D4E5F607182930A30 /* TerminalPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPanel.swift; sourceTree = "<group>"; };
+		F01B2C3D4E5F607182930A40 /* TerminalContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalContentView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7A1B2C3D4E5F607182930A18 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				10912FB02F91318C004E0158 /* SwiftTerm in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		7A1B2C3D4E5F607182930A0C = {
+			isa = PBXGroup;
+			children = (
+				7A1B2C3D4E5F607182930A0D /* NotchTerm */,
+				7A1B2C3D4E5F607182930A0E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7A1B2C3D4E5F607182930A0D /* NotchTerm */ = {
+			isa = PBXGroup;
+			children = (
+				7A1B2C3D4E5F607182930A10 /* AppDelegate.swift */,
+				7A1B2C3D4E5F607182930A11 /* main.swift */,
+				7A1B2C3D4E5F607182930A20 /* NotchDetector.swift */,
+				7A1B2C3D4E5F607182930A22 /* MouseMonitor.swift */,
+				E01B2C3D4E5F607182930A30 /* TerminalPanel.swift */,
+				F01B2C3D4E5F607182930A40 /* TerminalContentView.swift */,
+				A01B2C3D4E5F607182930A51 /* Settings.swift */,
+				B01B2C3D4E5F607182930A61 /* MesloLGSNerdFont-Regular.ttf */,
+				C01B2C3D4E5F607182930A70 /* AppIcon.icns */,
+				D01B2C3D4E5F607182930A80 /* WelcomeWindowController.swift */,
+				7AB0B0B000000000000B0002 /* ResizeBorderView.swift */,
+				7A1B2C3D4E5F607182930A12 /* Info.plist */,
+				7A1B2C3D4E5F607182930A13 /* NotchTerm.entitlements */,
+			);
+			path = NotchTerm;
+			sourceTree = "<group>";
+		};
+		7A1B2C3D4E5F607182930A0E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				7A1B2C3D4E5F607182930A0F /* NotchTerm.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7A1B2C3D4E5F607182930A19 /* NotchTerm */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A1B2C3D4E5F607182930A1F /* Build configuration list for PBXNativeTarget "NotchTerm" */;
+			buildPhases = (
+				7A1B2C3D4E5F607182930A16 /* Sources */,
+				7A1B2C3D4E5F607182930A17 /* Resources */,
+				7A1B2C3D4E5F607182930A18 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = NotchTerm;
+			productName = NotchTerm;
+			productReference = 7A1B2C3D4E5F607182930A0F /* NotchTerm.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7A1B2C3D4E5F607182930A0B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 2640;
+				TargetAttributes = {
+					7A1B2C3D4E5F607182930A19 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = 7A1B2C3D4E5F607182930A1C /* Build configuration list for PBXProject "NotchTerm" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 7A1B2C3D4E5F607182930A0C;
+			packageReferences = (
+				10912FAE2F91318C004E0158 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+			);
+			productRefGroup = 7A1B2C3D4E5F607182930A0E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7A1B2C3D4E5F607182930A19 /* NotchTerm */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7A1B2C3D4E5F607182930A17 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B01B2C3D4E5F607182930A60 /* MesloLGSNerdFont-Regular.ttf in Resources */,
+				C01B2C3D4E5F607182930A71 /* AppIcon.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7A1B2C3D4E5F607182930A16 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A1B2C3D4E5F607182930A14 /* AppDelegate.swift in Sources */,
+				7A1B2C3D4E5F607182930A15 /* main.swift in Sources */,
+				7A1B2C3D4E5F607182930A21 /* NotchDetector.swift in Sources */,
+				7A1B2C3D4E5F607182930A23 /* MouseMonitor.swift in Sources */,
+				E01B2C3D4E5F607182930A31 /* TerminalPanel.swift in Sources */,
+				F01B2C3D4E5F607182930A41 /* TerminalContentView.swift in Sources */,
+				A01B2C3D4E5F607182930A50 /* Settings.swift in Sources */,
+				D01B2C3D4E5F607182930A81 /* WelcomeWindowController.swift in Sources */,
+				7AB0B0B000000000000B0001 /* ResizeBorderView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		7A1B2C3D4E5F607182930A1A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_LOOPS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_CYCLE = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		7A1B2C3D4E5F607182930A1B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_LOOPS = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_CYCLE = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		7A1B2C3D4E5F607182930A1D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotchTerm/NotchTerm.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NotchTerm/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchterm.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		7A1B2C3D4E5F607182930A1E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotchTerm/NotchTerm.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = NotchTerm/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.notchterm.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7A1B2C3D4E5F607182930A1C /* Build configuration list for PBXProject "NotchTerm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A1B2C3D4E5F607182930A1A /* Debug */,
+				7A1B2C3D4E5F607182930A1B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7A1B2C3D4E5F607182930A1F /* Build configuration list for PBXNativeTarget "NotchTerm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A1B2C3D4E5F607182930A1D /* Debug */,
+				7A1B2C3D4E5F607182930A1E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		10912FAE2F91318C004E0158 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		10912FAF2F91318C004E0158 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 10912FAE2F91318C004E0158 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 7A1B2C3D4E5F607182930A0B /* Project object */;
+}

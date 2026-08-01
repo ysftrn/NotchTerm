@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Xcode build output
+build/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Xcode user-specific state
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+**/xcuserdata/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+
+# Aider
+.aider*
+
+# Claude Code local config
+.claude/
+
+# Release artifacts
+*.zip
