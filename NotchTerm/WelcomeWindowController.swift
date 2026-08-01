@@ -14,7 +14,7 @@ final class WelcomeWindowController: NSWindowController, NSWindowDelegate {
 
     convenience init(notchCenterX: CGFloat? = nil) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 490),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 640),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -122,10 +122,33 @@ private final class WelcomeContentView: NSView {
         addSubview(div1)
 
         // Feature rows
-        let f1 = featureRow("Any shell, any prompt — works out of the box")
-        let f2 = featureRow("Always running in the background, ready when you are")
-        let f3 = featureRow("Works across all Spaces and Mission Control")
-        [f1, f2, f3].forEach { addSubview($0) }
+        let f1 = featureRow(
+            symbol: "cursorarrow.rays",
+            title: "Hover to show, move away to hide",
+            subtitle: "Your shell keeps running the whole time — sessions survive every hide and show."
+        )
+        let f2 = featureRow(
+            symbol: "rectangle.stack",
+            title: "Tabs",
+            subtitle: "⌘T new · ⌘W close · ⌘1–9 jump · ⌃Tab cycle. The tab bar appears once you have two or more."
+        )
+        let f3 = featureRow(
+            symbol: "paintpalette",
+            title: "25 themes, one config file",
+            subtitle: "Press ⌘, to open the config. Edits apply the moment you save — no restart."
+        )
+        let f4 = featureRow(
+            symbol: "display.2",
+            title: "Every screen, notch or not",
+            subtitle: "External monitors get a phantom notch — hover the top-center of the menu bar."
+        )
+        let f5 = featureRow(
+            symbol: "arrow.up.backward.and.arrow.down.forward",
+            title: "Any shell, freely resizable",
+            subtitle: "zsh, bash, fish — whatever $SHELL says. Drag any edge; the panel stays centered."
+        )
+        let featureRows = [f1, f2, f3, f4, f5]
+        featureRows.forEach { addSubview($0) }
 
         // Divider
         let div2 = divider()
@@ -172,16 +195,24 @@ private final class WelcomeContentView: NSView {
             f1.leadingAnchor.constraint(equalTo: leadingAnchor, constant: hPad),
             f1.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -hPad),
 
-            f2.topAnchor.constraint(equalTo: f1.bottomAnchor, constant: 10),
+            f2.topAnchor.constraint(equalTo: f1.bottomAnchor, constant: 14),
             f2.leadingAnchor.constraint(equalTo: leadingAnchor, constant: hPad),
             f2.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -hPad),
 
-            f3.topAnchor.constraint(equalTo: f2.bottomAnchor, constant: 10),
+            f3.topAnchor.constraint(equalTo: f2.bottomAnchor, constant: 14),
             f3.leadingAnchor.constraint(equalTo: leadingAnchor, constant: hPad),
             f3.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -hPad),
 
+            f4.topAnchor.constraint(equalTo: f3.bottomAnchor, constant: 14),
+            f4.leadingAnchor.constraint(equalTo: leadingAnchor, constant: hPad),
+            f4.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -hPad),
+
+            f5.topAnchor.constraint(equalTo: f4.bottomAnchor, constant: 14),
+            f5.leadingAnchor.constraint(equalTo: leadingAnchor, constant: hPad),
+            f5.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -hPad),
+
             // Second divider
-            div2.topAnchor.constraint(equalTo: f3.bottomAnchor, constant: 18),
+            div2.topAnchor.constraint(equalTo: f5.bottomAnchor, constant: 18),
             div2.leadingAnchor.constraint(equalTo: leadingAnchor, constant: hPad),
             div2.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -hPad),
 
@@ -227,35 +258,41 @@ private final class WelcomeContentView: NSView {
         return box
     }
 
-    private func featureRow(_ text: String) -> NSView {
+    private func featureRow(symbol: String, title: String, subtitle: String) -> NSView {
         let row = NSView()
         row.translatesAutoresizingMaskIntoConstraints = false
 
-        let iconConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-        let iconImage = NSImage(systemSymbolName: "checkmark.circle.fill", accessibilityDescription: nil)?
+        let iconConfig = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
+        let iconImage = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?
             .withSymbolConfiguration(iconConfig)
 
         let iconView = NSImageView()
         iconView.image = iconImage
-        iconView.contentTintColor = .systemGreen
+        iconView.contentTintColor = .controlAccentColor
         iconView.imageScaling = .scaleNone
         iconView.translatesAutoresizingMaskIntoConstraints = false
 
-        let textField = label(text, font: .systemFont(ofSize: 13))
+        let titleField = label(title, font: .systemFont(ofSize: 13, weight: .semibold))
+        let subtitleField = label(subtitle, font: .systemFont(ofSize: 11.5), color: .secondaryLabelColor)
 
         row.addSubview(iconView)
-        row.addSubview(textField)
+        row.addSubview(titleField)
+        row.addSubview(subtitleField)
 
         NSLayoutConstraint.activate([
             iconView.leadingAnchor.constraint(equalTo: row.leadingAnchor),
-            iconView.topAnchor.constraint(equalTo: row.topAnchor, constant: 1),
-            iconView.widthAnchor.constraint(equalToConstant: 18),
-            iconView.heightAnchor.constraint(equalToConstant: 18),
+            iconView.topAnchor.constraint(equalTo: row.topAnchor, constant: 2),
+            iconView.widthAnchor.constraint(equalToConstant: 22),
+            iconView.heightAnchor.constraint(equalToConstant: 20),
 
-            textField.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 8),
-            textField.trailingAnchor.constraint(equalTo: row.trailingAnchor),
-            textField.topAnchor.constraint(equalTo: row.topAnchor),
-            textField.bottomAnchor.constraint(equalTo: row.bottomAnchor),
+            titleField.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 10),
+            titleField.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            titleField.topAnchor.constraint(equalTo: row.topAnchor),
+
+            subtitleField.leadingAnchor.constraint(equalTo: titleField.leadingAnchor),
+            subtitleField.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            subtitleField.topAnchor.constraint(equalTo: titleField.bottomAnchor, constant: 2),
+            subtitleField.bottomAnchor.constraint(equalTo: row.bottomAnchor),
         ])
 
         return row
@@ -286,7 +323,7 @@ private final class WelcomeContentView: NSView {
             color: .secondaryLabelColor
         )
         let secondaryText = label(
-            "It does not record keystrokes, screen content, or any user data.",
+            "It never logs, records, or transmits anything — no keystrokes, no screen content, no analytics.",
             font: .systemFont(ofSize: 11),
             color: .tertiaryLabelColor
         )
