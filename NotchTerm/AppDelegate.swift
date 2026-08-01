@@ -272,6 +272,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 return nil
             }
 
+            // `optionAsMetaKey` is off (see TerminalContentView) so Option+key passes
+            // through as a raw character for non-US keyboards, which also silences
+            // SwiftTerm's own word-skip/meta handling. Send the shell-standard
+            // sequences directly for the combos that would otherwise do nothing.
+            let terminalView = self.terminalPanel?.terminalContent?.terminalView
+            switch (pressed, event.keyCode) {
+            case (.option, 123): // Option+Left: back one word (emacs/readline binding).
+                terminalView?.send(txt: "\u{1B}b")
+                return nil
+            case (.option, 124): // Option+Right: forward one word.
+                terminalView?.send(txt: "\u{1B}f")
+                return nil
+            case (.command, 51): // Cmd+Backspace: delete to start of line (unix-line-discard).
+                terminalView?.send(txt: "\u{15}")
+                return nil
+            case (.shift, 36): // Shift+Return: insert a newline instead of submitting.
+                terminalView?.send(txt: "\u{1B}\r")
+                return nil
+            default:
+                break
+            }
+
             guard pressed.contains(.command),
                   let menu = self.statusItem?.menu
             else { return event }
