@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NotchTerm — a terminal that lives in your notch</title>
+<meta name="description" content="NotchTerm is a free, open-source macOS terminal that drops down when you hover the MacBook notch. Tabs, 25 themes, live config reload.">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg-soft: #14171f;
+    --panel: #1a1d27;
+    --border: #2a2e3d;
+    --fg: #e7eaf3;
+    --fg-dim: #9aa1b5;
+    --accent: #7aa2f7;
+    --accent2: #bb9af7;
+    --green: #9ece6a;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Notch gag at the very top ─────────────────────────────── */
+  .notch {
+    width: 190px; height: 26px;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 0 0 14px 14px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ── Hero ──────────────────────────────────────────────────── */
+  .hero {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 34px 24px 60px;
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.tag {
+    font-size: 1.25rem;
+    color: var(--fg-dim);
+    margin: 12px 0 28px;
+  }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 12px 26px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .btn:hover { transform: translateY(-1px); text-decoration: none; }
+  .btn-primary {
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    color: #0b0d12;
+  }
+  .btn-ghost {
+    border: 1px solid var(--border);
+    color: var(--fg);
+    background: var(--bg-soft);
+  }
+  .meta { margin-top: 18px; color: var(--fg-dim); font-size: .9rem; }
+
+  /* ── Fake terminal ─────────────────────────────────────────── */
+  .term {
+    max-width: 720px;
+    margin: -18px auto 0;
+    background: rgba(26, 29, 39, .92);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.55);
+    text-align: left;
+    overflow: hidden;
+    font-family: var(--mono);
+    font-size: .88rem;
+  }
+  .term-body { padding: 18px 20px 22px; }
+  .term-body .ln { display: block; white-space: pre-wrap; }
+  .p  { color: var(--green); }
+  .c  { color: var(--fg); }
+  .d  { color: var(--fg-dim); }
+  .b  { color: var(--accent); }
+  .cursor {
+    display: inline-block; width: 8px; height: 1.05em;
+    background: var(--fg); vertical-align: text-bottom;
+    animation: blink 1.1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .term-tabs {
+    display: flex;
+    border-top: 1px solid var(--border);
+    background: #12141c;
+    font-size: .78rem;
+  }
+  .term-tab {
+    padding: 7px 22px;
+    color: var(--fg-dim);
+    border-right: 1px solid var(--border);
+  }
+  .term-tab.active { background: rgba(26,29,39,.92); color: var(--fg); }
+  .term-tab.plus { border-right: none; margin-left: auto; padding: 7px 16px; }
+
+  /* ── Sections ──────────────────────────────────────────────── */
+  section { max-width: 880px; margin: 0 auto; padding: 56px 24px; }
+  section h2 {
+    font-size: 1.7rem;
+    letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+  .card {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .card h3 { font-size: 1rem; margin-bottom: 6px; }
+  .card p { color: var(--fg-dim); font-size: .92rem; }
+
+  pre {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: .86rem;
+    line-height: 1.55;
+    margin: 14px 0;
+  }
+  pre .cm { color: var(--fg-dim); }
+  code.inline {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-family: var(--mono);
+    font-size: .85em;
+  }
+  ol.steps { padding-left: 22px; }
+  ol.steps li { margin-bottom: 14px; }
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--bg-soft);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 18px;
+    color: var(--fg-dim);
+    font-size: .92rem;
+    margin: 16px 0;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--fg-dim); font-weight: 600; }
+  td:first-child { font-family: var(--mono); font-size: .85rem; white-space: nowrap; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: .85rem;
+    color: var(--fg-dim);
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 34px 24px 46px;
+    text-align: center;
+    color: var(--fg-dim);
+    font-size: .9rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="notch"></div>
+
+<div class="hero">
+  <div class="term" aria-hidden="true">
+    <div class="term-body">
+      <span class="ln"><span class="p">~ ❯</span> <span class="c">hover the notch</span></span>
+      <span class="ln"><span class="d"># a terminal drops down. move away — it hides.</span></span>
+      <span class="ln"><span class="d"># your shell keeps running the whole time.</span></span>
+      <span class="ln"><span class="p">~ ❯</span> <span class="b">git</span> <span class="c">push origin main</span></span>
+      <span class="ln"><span class="p">~ ❯</span> <span class="cursor"></span></span>
+    </div>
+    <div class="term-tabs">
+      <div class="term-tab active">zsh</div>
+      <div class="term-tab">htop</div>
+      <div class="term-tab">ssh</div>
+      <div class="term-tab plus">+</div>
+    </div>
+  </div>
+
+  <h1 style="margin-top:36px">NotchTerm</h1>
+  <p class="tag">A terminal that lives in your notch.<br>Hover to show. Move away to hide. Nothing to remember.</p>
+  <div class="cta">
+    <a class="btn btn-primary" href="https://github.com/ysftrn/NotchTerm/releases/latest">Download for macOS</a>
+    <a class="btn btn-ghost" href="https://github.com/ysftrn/NotchTerm">View on GitHub</a>
+  </div>
+  <p class="meta">Free &amp; open source (MIT) · macOS 13+ · Apple Silicon &amp; Intel · works without a notch too</p>
+</div>
+
+<section id="features">
+  <h2>Features</h2>
+  <div class="features">
+    <div class="card"><h3>Instant access</h3><p>No Dock icon, no hotkey, no window juggling. The terminal is wherever your cursor already is — the top of the screen.</p></div>
+    <div class="card"><h3>Sessions persist</h3><p>Hiding the panel never kills your shell. Long-running builds, SSH sessions, and logs survive every show/hide.</p></div>
+    <div class="card"><h3>Tabs</h3><p>Cmd+T for a new tab. The tab strip only appears when you have two or more — zero chrome otherwise. Top or bottom, your choice.</p></div>
+    <div class="card"><h3>25 themes</h3><p>Catppuccin, Dracula, Gruvbox, Nord, Rose Pine, Solarized, Tokyo Night and more — each with a complete ANSI palette.</p></div>
+    <div class="card"><h3>Every screen</h3><p>Real notch on MacBooks; a phantom hover zone at the top-center of external monitors and non-notch Macs. The panel follows your cursor across displays.</p></div>
+    <div class="card"><h3>TUI-friendly</h3><p>vim, htop, less — full-screen terminal apps just work. Escape reaches the terminal, always.</p></div>
+    <div class="card"><h3>Live config</h3><p>One plain-text file. Edit, save, applied instantly — no restart, no reload button.</p></div>
+    <div class="card"><h3>Private by design</h3><p>No analytics, no network calls, no account. Open source — read every line.</p></div>
+  </div>
+</section>
+
+<section id="install">
+  <h2>Install</h2>
+  <ol class="steps">
+    <li>Download <code class="inline">NotchTerm.zip</code> from the <a href="https://github.com/ysftrn/NotchTerm/releases/latest">latest release</a> and unzip it.</li>
+    <li>Move <code class="inline">NotchTerm.app</code> into <code class="inline">/Applications</code>.</li>
+    <li>Clear the quarantine flag (NotchTerm isn’t notarized yet — indie app, no Apple Developer subscription; it’s on the roadmap):
+<pre>xattr -d com.apple.quarantine /Applications/NotchTerm.app</pre>
+    Alternatively, open it once, then approve it under <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.</li>
+    <li>Launch NotchTerm and grant <strong>Accessibility</strong> access when prompted.</li>
+  </ol>
+  <div class="note">
+    <strong>Why Accessibility?</strong> NotchTerm watches the mouse position so it can react when you hover the notch while another app is focused. That’s the entire use. It does not log keystrokes, read screen content, or transmit anything — <a href="https://github.com/ysftrn/NotchTerm">verify in the source</a>.
+  </div>
+  <h2 style="margin-top:40px">Build from source</h2>
+<pre>git clone https://github.com/ysftrn/NotchTerm.git
+cd NotchTerm
+xcodebuild -project NotchTerm.xcodeproj -scheme NotchTerm -configuration Release build</pre>
+</section>
+
+<section id="usage">
+  <h2>Shortcuts</h2>
+  <table>
+    <tr><th>Keys</th><th>Action</th></tr>
+    <tr><td>Cmd+T</td><td>New tab</td></tr>
+    <tr><td>Cmd+W</td><td>Close tab (hides the panel on the last tab)</td></tr>
+    <tr><td>Cmd+1 … Cmd+9</td><td>Jump to tab</td></tr>
+    <tr><td>Ctrl+Tab / Ctrl+Shift+Tab</td><td>Next / previous tab</td></tr>
+    <tr><td>Cmd+K</td><td>Clear terminal</td></tr>
+    <tr><td>Cmd+C / Cmd+V</td><td>Copy / paste</td></tr>
+    <tr><td>Cmd+,</td><td>Open config file</td></tr>
+    <tr><td>Cmd+Q</td><td>Quit</td></tr>
+  </table>
+  <p style="margin-top:14px;color:var(--fg-dim)">Typing <code class="inline">exit</code> closes the current tab. Drag any edge to resize — the panel stays centered under the notch.</p>
+</section>
+
+<section id="config">
+  <h2>Configuration</h2>
+  <p style="color:var(--fg-dim)">Everything lives in <code class="inline">~/.config/notchterm/notchterm.conf</code>. Open it with <code class="inline">Cmd+,</code> — changes apply the moment you save.</p>
+<pre>font-family = MesloLGSNerdFont-Regular
+font-size = 13              <span class="cm"># points, 8–36</span>
+
+theme = Catppuccin Mocha    <span class="cm"># 25 built-in themes</span>
+opacity = 1.0               <span class="cm"># 0.1 – 1.0</span>
+cursor-style = block        <span class="cm"># block | underline | bar</span>
+cursor-blink = false        <span class="cm"># true | false</span>
+
+shell = /bin/zsh            <span class="cm"># zsh, bash, fish — anything</span>
+scrollback = 10000          <span class="cm"># lines kept in history</span>
+
+width = 1000                <span class="cm"># points</span>
+height = 400                <span class="cm"># points; 0 = 40% of screen</span>
+terminal-padding = 0        <span class="cm"># inner inset</span>
+notch-gap = 0               <span class="cm"># gap below the notch</span>
+tab-position = bottom       <span class="cm"># top | bottom</span></pre>
+
+  <h2 style="margin-top:40px">Themes</h2>
+  <div class="chips">
+    <span class="chip">Default</span><span class="chip">Ayu</span><span class="chip">Ayu Mirage</span>
+    <span class="chip">Catppuccin Frappe</span><span class="chip">Catppuccin Latte</span>
+    <span class="chip">Catppuccin Macchiato</span><span class="chip">Catppuccin Mocha</span>
+    <span class="chip">Dracula</span><span class="chip">Everforest Dark</span>
+    <span class="chip">GitHub Dark</span><span class="chip">GitHub Light</span>
+    <span class="chip">Gruvbox Dark</span><span class="chip">Gruvbox Light</span>
+    <span class="chip">Monokai</span><span class="chip">Nord</span>
+    <span class="chip">One Dark</span><span class="chip">One Light</span>
+    <span class="chip">Rose Pine</span><span class="chip">Rose Pine Dawn</span><span class="chip">Rose Pine Moon</span>
+    <span class="chip">Snazzy</span><span class="chip">Solarized Dark</span><span class="chip">Solarized Light</span>
+    <span class="chip">Tokyo Night</span><span class="chip">Tokyo Night Storm</span>
+  </div>
+</section>
+
+<footer>
+  <p>NotchTerm is free and open source under the <a href="https://github.com/ysftrn/NotchTerm/blob/main/LICENSE">MIT license</a>.</p>
+  <p style="margin-top:6px">Built with <a href="https://github.com/migueldeicaza/SwiftTerm">SwiftTerm</a> · Theme palettes via <a href="https://github.com/mbadolato/iTerm2-Color-Schemes">iTerm2-Color-Schemes</a> · © 2026 Yusuf Torun</p>
+</footer>
+
+</body>
+</html>
