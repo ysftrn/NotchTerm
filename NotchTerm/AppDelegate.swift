@@ -7,7 +7,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private(set) var notchInfo: NotchInfo?
     private var notchTriggerMonitor: MouseMonitor?
     private var panelDismissMonitor: MouseMonitor?
-    private var escapePressMonitor: Any?
     private var menuShortcutMonitor: Any?
     private var terminalPanel: TerminalPanel?
     private var accessibilityPollTimer: Timer?
@@ -190,7 +189,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Stop the dismiss monitor before the animation starts so expanding
         // frames don't fire false exit events mid-animation.
         stopPanelDismissMonitor()
-        startEscapeMonitor()
         startMenuShortcutMonitor()
         terminalPanel?.showPanel { [weak self] in
             // Re-arm the dismiss monitor only after the panel has fully expanded.
@@ -203,38 +201,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         isPanelVisible = false
         // Stop monitors immediately — don't wait for animation to finish.
         stopPanelDismissMonitor()
-        stopEscapeMonitor()
         stopMenuShortcutMonitor()
         terminalPanel?.hidePanel { [weak self] in
             // Reset trigger monitor only after panel is fully hidden so a hover
             // during the contraction animation can't re-open prematurely.
             self?.notchTriggerMonitor?.resetState()
-        }
-    }
-
-    // MARK: - Escape monitor
-
-    /// Intercepts Escape before it reaches the terminal and hides the panel.
-    /// Exception: if an IME composition is in progress (`hasMarkedText`), the
-    /// Escape is passed through so the IME can cancel the composition instead.
-    private func startEscapeMonitor() {
-        guard escapePressMonitor == nil else { return }
-        escapePressMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard event.keyCode == 53 else { return event } // 53 = Escape
-            // Let IME handle Escape when it has an active composition.
-            if let tv = self?.terminalPanel?.terminalContent?.terminalView,
-               tv.hasMarkedText() {
-                return event
-            }
-            self?.hideTerminalPanel()
-            return nil // consume — do not forward to the terminal
-        }
-    }
-
-    private func stopEscapeMonitor() {
-        if let m = escapePressMonitor {
-            NSEvent.removeMonitor(m)
-            escapePressMonitor = nil
         }
     }
 
