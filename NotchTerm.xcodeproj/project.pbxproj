@@ -15,6 +15,7 @@
 		7AB0B0B000000000000B0001 /* ResizeBorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB0B0B000000000000B0002 /* ResizeBorderView.swift */; };
 		A01B2C3D4E5F607182930A50 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A01B2C3D4E5F607182930A51 /* Settings.swift */; };
 		A01B2C3D4E5F607182930A60 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A01B2C3D4E5F607182930A61 /* Theme.swift */; };
+		A01B2C3D4E5F607182930A62 /* TabContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A01B2C3D4E5F607182930A63 /* TabContainerView.swift */; };
 		B01B2C3D4E5F607182930A60 /* MesloLGSNerdFont-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B01B2C3D4E5F607182930A61 /* MesloLGSNerdFont-Regular.ttf */; };
 		C01B2C3D4E5F607182930A71 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = C01B2C3D4E5F607182930A70 /* AppIcon.icns */; };
 		D01B2C3D4E5F607182930A81 /* WelcomeWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01B2C3D4E5F607182930A80 /* WelcomeWindowController.swift */; };
@@ -33,6 +34,7 @@
 		7AB0B0B000000000000B0002 /* ResizeBorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResizeBorderView.swift; sourceTree = "<group>"; };
 		A01B2C3D4E5F607182930A51 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		A01B2C3D4E5F607182930A61 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		A01B2C3D4E5F607182930A63 /* TabContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabContainerView.swift; sourceTree = "<group>"; };
 		B01B2C3D4E5F607182930A61 /* MesloLGSNerdFont-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "MesloLGSNerdFont-Regular.ttf"; sourceTree = "<group>"; };
 		C01B2C3D4E5F607182930A70 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		D01B2C3D4E5F607182930A80 /* WelcomeWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeWindowController.swift; sourceTree = "<group>"; };
@@ -71,6 +73,7 @@
 				F01B2C3D4E5F607182930A40 /* TerminalContentView.swift */,
 				A01B2C3D4E5F607182930A51 /* Settings.swift */,
 				A01B2C3D4E5F607182930A61 /* Theme.swift */,
+				A01B2C3D4E5F607182930A63 /* TabContainerView.swift */,
 				B01B2C3D4E5F607182930A61 /* MesloLGSNerdFont-Regular.ttf */,
 				C01B2C3D4E5F607182930A70 /* AppIcon.icns */,
 				D01B2C3D4E5F607182930A80 /* WelcomeWindowController.swift */,
@@ -170,6 +173,7 @@
 				F01B2C3D4E5F607182930A41 /* TerminalContentView.swift in Sources */,
 				A01B2C3D4E5F607182930A50 /* Settings.swift in Sources */,
 				A01B2C3D4E5F607182930A60 /* Theme.swift in Sources */,
+				A01B2C3D4E5F607182930A62 /* TabContainerView.swift in Sources */,
 				D01B2C3D4E5F607182930A81 /* WelcomeWindowController.swift in Sources */,
 				7AB0B0B000000000000B0001 /* ResizeBorderView.swift in Sources */,
 			);

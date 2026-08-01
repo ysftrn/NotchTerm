@@ -211,24 +211,53 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Menu shortcut monitor
 
-    /// Dispatches status-menu key equivalents (Cmd+Q, Cmd+R, Cmd+, …) while
-    /// the panel is visible, without requiring the user to open the menu first.
-    /// Reads key equivalents directly from the menu so this stays in sync with
-    /// any future menu changes. Active only while the panel is shown.
+    /// Dispatches status-menu key equivalents (Cmd+Q, Cmd+R, Cmd+, …) and
+    /// tab shortcuts while the panel is visible, without requiring the user
+    /// to open the menu first. Reads key equivalents directly from the menu
+    /// so this stays in sync with any future menu changes. Active only while
+    /// the panel is shown.
     private func startMenuShortcutMonitor() {
         guard menuShortcutMonitor == nil else { return }
         menuShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard event.modifierFlags.contains(.command),
-                  let self,
-                  let menu = self.statusItem?.menu
-            else { return event }
+            guard let self else { return event }
 
             let chars = event.charactersIgnoringModifiers?.lowercased() ?? ""
             let pressed = event.modifierFlags.intersection([.command, .option, .shift, .control])
+            let tabs = self.terminalPanel?.tabContainer
+
+            // Ctrl+Tab / Ctrl+Shift+Tab: cycle tabs (keyCode 48 = Tab).
+            if event.keyCode == 48, pressed == .control || pressed == [.control, .shift] {
+                if pressed.contains(.shift) {
+                    tabs?.selectPrevious()
+                } else {
+                    tabs?.selectNext()
+                }
+                return nil
+            }
+
+            guard pressed.contains(.command),
+                  let menu = self.statusItem?.menu
+            else { return event }
 
             // Handle shortcuts that have no menu item.
             if pressed == .command {
                 switch chars {
+                case "t":
+                    tabs?.newTab()
+                    return nil
+                case "w":
+                    // Close the tab; with a single tab, "close" hides the panel.
+                    if let tabs, tabs.tabs.count > 1 {
+                        tabs.closeActiveTab()
+                    } else {
+                        self.hideTerminalPanel()
+                    }
+                    return nil
+                case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+                    if let n = Int(chars) {
+                        tabs?.select(index: n - 1)
+                    }
+                    return nil
                 case "k":
                     self.terminalPanel?.terminalContent?.clearTerminal()
                     return nil

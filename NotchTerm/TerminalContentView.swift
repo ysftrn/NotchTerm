@@ -12,6 +12,20 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
     private weak var terminalScroller: NSScroller?
     private var scrollerObservations: [NSKeyValueObservation] = []
 
+    /// Called when the shell exits on its own (`exit`, Ctrl+D). When set —
+    /// tab mode — the owner decides whether to close the tab or restart.
+    /// When nil, the shell restarts in place (legacy single-view behavior).
+    var onProcessExit: ((TerminalContentView) -> Void)?
+
+    /// Called whenever `tabTitle` changes.
+    var onTitleChange: ((TerminalContentView) -> Void)?
+
+    /// Title for the tab strip: the shell's title escape sequence when one
+    /// has been received, otherwise the shell's basename.
+    private(set) var tabTitle: String = (Settings.shared.shell as NSString).lastPathComponent {
+        didSet { if oldValue != tabTitle { onTitleChange?(self) } }
+    }
+
     // Terminal-view padding constraints — `constant` is updated from
     // Settings.terminalPadding so the inset can be tuned live.
     private var terminalLeadingC: NSLayoutConstraint!
@@ -252,6 +266,18 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
 
     }
 
+    /// Restarts the shell in place — used for the last remaining tab so the
+    /// panel never goes empty.
+    func restartShell() {
+        respawnShell()
+    }
+
+    /// Kills the shell process. Used when a tab is closed explicitly; the
+    /// caller is responsible for removing the view afterwards.
+    func shutdown() {
+        terminalView.terminate()
+    }
+
     /// Respawns the shell after it has exited (e.g. user typed `exit` or Ctrl+D).
     /// Force-terminates any lingering PTY/DispatchIO state before starting a new
     /// process — without this, a Ctrl+D respawn occasionally produced a frozen
@@ -297,7 +323,10 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
     }
 
     func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
-        // Could update panel title in the future.
+        let trimmed = title.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty {
+            tabTitle = trimmed
+        }
     }
 
     func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
@@ -305,12 +334,16 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
     }
 
     func processTerminated(source: TerminalView, exitCode: Int32?) {
-        // Respawn on the next runloop tick to avoid re-entry issues.
+        // Handle on the next runloop tick to avoid re-entry issues.
         // Guard against a stale callback arriving after checkProcessHealth() already
         // started a respawn (double-respawn would kill the newly spawned shell).
         DispatchQueue.main.async { [weak self] in
             guard let self, !self.isRespawning else { return }
-            self.respawnShell()
+            if let handler = self.onProcessExit {
+                handler(self)
+            } else {
+                self.respawnShell()
+            }
         }
     }
 }

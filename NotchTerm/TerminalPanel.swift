@@ -14,7 +14,10 @@ final class TerminalPanel: NSPanel, NSWindowDelegate {
 
     private static let animDuration: TimeInterval = 0.2
 
-    private(set) var terminalContent: TerminalContentView?
+    private(set) var tabContainer: TabContainerView?
+
+    /// The terminal of the currently active tab.
+    var terminalContent: TerminalContentView? { tabContainer?.activeContent }
 
     /// Transparent overlay that intercepts mouse events near the panel edges
     /// to widen the drag-to-resize hit zone.
@@ -46,10 +49,21 @@ final class TerminalPanel: NSPanel, NSWindowDelegate {
         minSize = NSSize(width: Self.minWidth, height: Self.minHeight)
         delegate = self
 
-        let terminal = TerminalContentView(frame: .zero)
-        terminalContent = terminal
-        contentView = terminal
+        let container = TabContainerView(frame: .zero)
+        container.onTabBarLayoutChange = { [weak self] in self?.updateResizeBorderForTabBar() }
+        tabContainer = container
+        contentView = container
         attachResizeBorder()
+        updateResizeBorderForTabBar()
+    }
+
+    /// Shrinks the resize-border grab zone on the edge occupied by the tab
+    /// bar so tab clicks aren't swallowed by the resize overlay.
+    private func updateResizeBorderForTabBar() {
+        let barVisible = tabContainer?.isTabBarVisible ?? false
+        let barOnTop = Settings.shared.tabPosition == "top"
+        resizeBorder.slimTopEdge = barVisible && barOnTop
+        resizeBorder.slimBottomEdge = barVisible && !barOnTop
     }
 
     /// Pins the resize border on top of whichever view is the current

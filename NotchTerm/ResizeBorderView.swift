@@ -14,6 +14,16 @@ final class ResizeBorderView: NSView {
     /// than `edgeWidth` so corners are easier to grab than straight edges.
     var cornerSize: CGFloat = 20
 
+    /// When the tab bar occupies an edge, that edge's grab zone shrinks so
+    /// tab clicks aren't swallowed by this overlay.
+    var slimTopEdge = false { didSet { window?.invalidateCursorRects(for: self) } }
+    var slimBottomEdge = false { didSet { window?.invalidateCursorRects(for: self) } }
+
+    private var topEdgeWidth: CGFloat    { slimTopEdge    ? 5 : edgeWidth }
+    private var bottomEdgeWidth: CGFloat { slimBottomEdge ? 5 : edgeWidth }
+    private var topCornerSize: CGFloat    { slimTopEdge    ? 10 : cornerSize }
+    private var bottomCornerSize: CGFloat { slimBottomEdge ? 10 : cornerSize }
+
     private enum Edge {
         case top, bottom, left, right
         case topLeft, topRight, bottomLeft, bottomRight
@@ -32,13 +42,13 @@ final class ResizeBorderView: NSView {
         let b = bounds
         let nearLeft   = p.x <= edgeWidth
         let nearRight  = p.x >= b.width  - edgeWidth
-        let nearBottom = p.y <= edgeWidth
-        let nearTop    = p.y >= b.height - edgeWidth
+        let nearBottom = p.y <= bottomEdgeWidth
+        let nearTop    = p.y >= b.height - topEdgeWidth
 
         let inCornerLeft   = p.x <= cornerSize
         let inCornerRight  = p.x >= b.width  - cornerSize
-        let inCornerBottom = p.y <= cornerSize
-        let inCornerTop    = p.y >= b.height - cornerSize
+        let inCornerBottom = p.y <= bottomCornerSize
+        let inCornerTop    = p.y >= b.height - topCornerSize
 
         if inCornerTop    && inCornerLeft  { return .topLeft }
         if inCornerTop    && inCornerRight { return .topRight }
@@ -56,10 +66,10 @@ final class ResizeBorderView: NSView {
         let cornerInset = cornerSize
         let edgeInset = edgeWidth
         // Horizontal edges (top/bottom) — exclude corner regions
-        let topEdge = NSRect(x: cornerInset, y: b.height - edgeInset,
-                             width: max(0, b.width - cornerInset * 2), height: edgeInset)
+        let topEdge = NSRect(x: cornerInset, y: b.height - topEdgeWidth,
+                             width: max(0, b.width - cornerInset * 2), height: topEdgeWidth)
         let bottomEdge = NSRect(x: cornerInset, y: 0,
-                                width: max(0, b.width - cornerInset * 2), height: edgeInset)
+                                width: max(0, b.width - cornerInset * 2), height: bottomEdgeWidth)
         addCursorRect(topEdge,    cursor: .resizeUpDown)
         addCursorRect(bottomEdge, cursor: .resizeUpDown)
         // Vertical edges (left/right) — exclude corner regions

@@ -100,6 +100,13 @@ final class Settings {
         return CGFloat(max(0, min(50, v)))
     }
 
+    /// Edge the tab bar sits on when two or more tabs are open:
+    /// "top" or "bottom". Default: "bottom".
+    var tabPosition: String {
+        let s = (parsed["tab-position"] ?? "bottom").lowercased()
+        return ["top", "bottom"].contains(s) ? s : "bottom"
+    }
+
     // MARK: - Font resolution
 
     /// Returns the configured font, falling back through common Nerd Font
@@ -229,7 +236,7 @@ final class Settings {
     /// Current canonical config layout version. Bump when keys are added or
     /// the template changes; files without the matching marker are rewritten
     /// in canonical form (existing values preserved).
-    private static let configFormat = 3
+    private static let configFormat = 4
 
     /// All keys the template knows how to place. Anything else the user
     /// added by hand survives migration under an "Other" section.
@@ -237,7 +244,7 @@ final class Settings {
         "font-family", "font-size",
         "theme", "opacity", "cursor-style", "cursor-blink",
         "shell", "scrollback",
-        "width", "height", "terminal-padding", "notch-gap",
+        "width", "height", "terminal-padding", "notch-gap", "tab-position",
     ]
 
     /// Renders the config file in canonical order, taking each value from
@@ -310,6 +317,7 @@ final class Settings {
         \(line("height", "400", "points; 0 = 40% of screen height"))
         \(line("terminal-padding", "0", "inner inset, 0–40"))
         \(line("notch-gap", "0", "gap below the notch, 0–50"))
+        \(line("tab-position", "bottom", "tab bar edge: top | bottom"))
         """
 
         let unknown = values
