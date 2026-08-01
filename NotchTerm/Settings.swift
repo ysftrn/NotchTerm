@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 
 // MARK: - Color scheme presets
 
@@ -51,11 +52,14 @@ final class Settings {
     static let configFile: URL = configDir.appendingPathComponent("notchterm.conf")
 
     private var parsed: [String: String] = [:]
+    private var configWatcher: DispatchSourceFileSystemObject?
+    private var pendingAutoReload: DispatchWorkItem?
 
     private init() {
         ensureConfigExists()
         loadParsed()       // silent load — no notification on init
-        migrateMissingKeys()
+        migrateIfNeeded()
+        startWatchingConfig()
     }
 
     // MARK: - Typed accessors (all read from `parsed`)
@@ -109,9 +113,9 @@ final class Settings {
     }
 
     /// Panel height in points, read from config.
-    /// 0 means "use the 40 % of screen-height default".
+    /// 0 (or a missing key) means "use the 40 % of screen-height default".
     var panelHeight: CGFloat {
-        guard let s = parsed["height"], let v = Double(s) else { return 0 }
+        guard let s = parsed["height"], let v = Double(s), v > 0 else { return 0 }
         return CGFloat(max(150, v))
     }
 
@@ -153,15 +157,78 @@ final class Settings {
 
     // MARK: - Config file actions
 
-    /// Opens the config file in the user's default text editor.
+    /// Opens the config file in the user's default plain-text editor.
+    /// `.conf` has no registered handler on macOS, so a plain `open(_:)`
+    /// would show an app-picker dialog — instead resolve whichever app
+    /// handles plain text (TextEdit as a last resort) and open with it
+    /// explicitly.
     func openConfigFile() {
-        NSWorkspace.shared.open(Self.configFile)
+        let editor = NSWorkspace.shared.urlForApplication(toOpen: UTType.plainText)
+            ?? URL(fileURLWithPath: "/System/Applications/TextEdit.app")
+        NSWorkspace.shared.open(
+            [Self.configFile],
+            withApplicationAt: editor,
+            configuration: NSWorkspace.OpenConfiguration()
+        )
     }
 
     /// Re-reads the config file and posts `didChangeNotification`.
     func reload() {
         loadParsed()
         notifyChanged()
+    }
+
+    // MARK: - Auto-reload on save
+
+    /// Watches the config file and reloads automatically when it changes.
+    /// Editors typically save atomically (write temp file, rename over the
+    /// original), which swaps the inode — so on .rename/.delete the watch
+    /// is re-established on the path.
+    private func startWatchingConfig() {
+        configWatcher?.cancel()
+        configWatcher = nil
+
+        let fd = open(Self.configFile.path, O_EVTONLY)
+        guard fd >= 0 else {
+            // File momentarily missing (mid-atomic-save or deleted) — retry.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.startWatchingConfig()
+            }
+            return
+        }
+
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: fd,
+            eventMask: [.write, .extend, .rename, .delete],
+            queue: .main
+        )
+        source.setEventHandler { [weak self, weak source] in
+            guard let self, let source else { return }
+            self.scheduleAutoReload()
+            if !source.data.intersection([.rename, .delete]).isEmpty {
+                self.startWatchingConfig()
+            }
+        }
+        source.setCancelHandler { close(fd) }
+        source.resume()
+        configWatcher = source
+    }
+
+    /// Debounces bursts of file events (editors fire several per save) and
+    /// posts `didChangeNotification` only when a value actually changed —
+    /// our own writes and no-op saves stay silent.
+    private func scheduleAutoReload() {
+        pendingAutoReload?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            let previous = self.parsed
+            self.loadParsed()
+            if self.parsed != previous {
+                self.notifyChanged()
+            }
+        }
+        pendingAutoReload = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
     }
 
     func notifyChanged() {
@@ -194,46 +261,95 @@ final class Settings {
         return result
     }
 
-    /// Append documentation + default values for keys that didn't exist in
-    /// older versions of the config file. Runs once at launch so users who
-    /// already have a `notchterm.conf` from a previous version still see
-    /// (and can edit) the new keys without losing their existing edits.
-    /// If the user has commented a key out, it counts as "missing" and gets
-    /// appended again — that's a deliberate fallback to the documented
-    /// defaults. The new section lands at the bottom with section headers.
-    private func migrateMissingKeys() {
+    /// Current canonical config layout version. Bump when keys are added or
+    /// the template changes; files without the matching marker are rewritten
+    /// in canonical form (existing values preserved).
+    private static let configFormat = 2
+
+    /// All keys the template knows how to place. Anything else the user
+    /// added by hand survives migration under an "Other" section.
+    private static let knownKeys: Set<String> = [
+        "font-family", "font-size",
+        "theme", "opacity", "cursor-style", "cursor-blink",
+        "shell", "scrollback",
+        "width", "height", "terminal-padding", "notch-gap",
+    ]
+
+    /// Renders the config file in canonical order, taking each value from
+    /// `values` when present and the documented default otherwise. Inline
+    /// comments are aligned to a shared column for readability.
+    private static func canonicalContent(values: [String: String]) -> String {
+        let commentColumn = 28
+
+        func line(_ key: String, _ def: String, _ comment: String? = nil) -> String {
+            let kv = "\(key) = \(values[key] ?? def)"
+            guard let comment else { return kv }
+            let pad = String(repeating: " ", count: max(commentColumn - kv.count, 2))
+            return kv + pad + "# " + comment
+        }
+
+        let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+
+        var content = """
+        # NotchTerm — ~/.config/notchterm/notchterm.conf
+        # Edits apply automatically when you save this file.
+        # config-format: \(configFormat) (do not remove this line)
+
+
+        # ── Font ──────────────────────────────────────────────────────────
+        # PostScript name of any installed monospace font. The bundled
+        # default includes Nerd Font glyphs. Examples: Menlo, SF Mono,
+        # JetBrainsMonoNerdFont-Regular (install from nerdfonts.com).
+
+        \(line("font-family", "MesloLGSNerdFont-Regular"))
+        \(line("font-size", "13", "points, 8–36"))
+
+
+        # ── Appearance ────────────────────────────────────────────────────
+
+        \(line("theme", "Default", "Default | Dracula | Catppuccin | Solarized Dark | One Dark"))
+        \(line("opacity", "1.0", "0.1 – 1.0"))
+        \(line("cursor-style", "block", "block | underline | bar"))
+        \(line("cursor-blink", "false", "true | false"))
+
+
+        # ── Terminal ──────────────────────────────────────────────────────
+
+        \(line("shell", defaultShell, "full path to the shell executable"))
+        \(line("scrollback", "10000", "lines kept in history (min 100)"))
+
+
+        # ── Window ────────────────────────────────────────────────────────
+
+        \(line("width", "600", "points (min 300)"))
+        \(line("height", "400", "points; 0 = 40% of screen height"))
+        \(line("terminal-padding", "6", "inner inset, 0–40"))
+        \(line("notch-gap", "0", "gap below the notch, 0–50"))
+        """
+
+        let unknown = values
+            .filter { !knownKeys.contains($0.key) }
+            .sorted { $0.key < $1.key }
+        if !unknown.isEmpty {
+            content += "\n\n\n# ── Other ─────────────────────────────────────────────────────────\n\n"
+            content += unknown.map { "\($0.key) = \($0.value)" }.joined(separator: "\n")
+        }
+        return content + "\n"
+    }
+
+    /// Rewrites pre-`configFormat` files (including any from the old
+    /// append-migration era) into the compact canonical layout. User values
+    /// are preserved; user comments are not — the file header says so.
+    private func migrateIfNeeded() {
         let url = Self.configFile
         guard let original = try? String(contentsOf: url, encoding: .utf8) else { return }
+        guard !original.contains("config-format: \(Self.configFormat)") else { return }
 
-        var additions: [String] = []
-        if parsed["terminal-padding"] == nil {
-            additions.append("""
-            # terminal-padding: inner padding in points between the panel
-            # edges and the terminal view. Affects all four sides.
-            #   Range: 0 – 40
-
-            terminal-padding = 6
-            """)
-        }
-        if parsed["notch-gap"] == nil {
-            additions.append("""
-            # notch-gap: vertical distance in points between the bottom of
-            # the notch and the top of the panel. A small gap visually
-            # separates the window from the notch and creates a mouse buffer
-            # zone that reduces accidental dismissals.
-            #   Range: 0 – 50
-
-            notch-gap = 0
-            """)
-        }
-
-        guard !additions.isEmpty else { return }
-
-        let header = "\n\n# ── Added in 0.1.6 ────────────────────────────────────────────────────────\n\n"
-        let appended = original + header + additions.joined(separator: "\n\n") + "\n"
         do {
-            try appended.write(to: url, atomically: true, encoding: .utf8)
-            parsed = Self.parse(file: url)
+            try Self.canonicalContent(values: parsed)
+                .write(to: url, atomically: true, encoding: .utf8)
+            loadParsed()
+            print("[NotchTerm] Config migrated to format \(Self.configFormat).")
         } catch {
             print("[NotchTerm] Failed to migrate config file: \(error.localizedDescription)")
         }
@@ -251,101 +367,9 @@ final class Settings {
         }
         guard !fm.fileExists(atPath: Self.configFile.path) else { return }
 
-        let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-        let content = """
-        # NotchTerm configuration
-        # Location: ~/.config/notchterm/notchterm.conf
-        #
-        # Edit and save, then click Reload Config in the menu bar to apply changes.
-        # Both "key = value" and "key=value" are accepted. Lines starting with
-        # '#' and inline comments after '#' are ignored.
-
-
-        # ── Font ──────────────────────────────────────────────────────────────────
-        #
-        # font-family: PostScript name or family name of a monospace font.
-        #
-        #   Bundled (works out of the box, includes Nerd Font glyphs):
-        #     font-family = MesloLGSNerdFont-Regular
-        #
-        #   Other Nerd Fonts (install from https://www.nerdfonts.com):
-        #     font-family = JetBrainsMonoNerdFont-Regular
-        #     font-family = HackNerdFont-Regular
-        #     font-family = FiraCodeNerdFont-Regular
-        #
-        #   System fonts (always available, no Nerd Font glyphs):
-        #     font-family = Menlo
-        #     font-family = SF Mono
-        #
-        # Leave blank to use the built-in MesloLGS Nerd Font default.
-
-        font-family = MesloLGSNerdFont-Regular
-        font-size = 13          # points; valid range 8–36
-
-
-        # ── Appearance ────────────────────────────────────────────────────────────
-        #
-        # theme: built-in color scheme preset.
-        #   Options: Default, Dracula, Catppuccin, Solarized Dark, One Dark
-
-        theme = Default
-
-        # opacity: overall panel transparency.
-        #   Range: 0.1 (nearly transparent) – 1.0 (fully opaque)
-
-        opacity = 1.0
-
-        # cursor-style: shape of the terminal cursor.
-        #   Options: block, underline, bar
-
-        cursor-style = block
-
-        # cursor-blink: whether the cursor blinks.
-        #   Options: true, false
-
-        cursor-blink = false
-
-        # ── Terminal ──────────────────────────────────────────────────────────────
-        #
-        # shell: full path to the shell executable.
-        #   Examples: /bin/zsh   /bin/bash   /opt/homebrew/bin/fish
-
-        shell = \(defaultShell)
-
-        # scrollback: number of lines kept in the scroll buffer.
-        #   Range: 100 – unlimited (large values use more memory)
-
-        scrollback = 10000
-
-
-        # ── Window ────────────────────────────────────────────────────────────────
-        #
-        # width: panel width in points.
-        #   Range: 300 – screen width
-
-        width = 600
-
-        # height: panel height in points.
-        #   Range: 150 – screen height
-
-        height = 400
-
-        # terminal-padding: inner padding in points between the panel edges
-        # and the terminal view. Affects all four sides.
-        #   Range: 0 – 40
-
-        terminal-padding = 6
-
-        # notch-gap: vertical distance in points between the bottom of the
-        # notch and the top of the panel. A small gap visually separates the
-        # window from the notch and creates a mouse buffer zone that reduces
-        # accidental dismissals.
-        #   Range: 0 – 50
-
-        notch-gap = 0
-        """
         do {
-            try content.write(to: Self.configFile, atomically: true, encoding: .utf8)
+            try Self.canonicalContent(values: [:])
+                .write(to: Self.configFile, atomically: true, encoding: .utf8)
         } catch {
             print("[NotchTerm] Failed to write default config: \(error.localizedDescription)")
         }
