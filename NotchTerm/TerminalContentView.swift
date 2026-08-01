@@ -9,6 +9,8 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
     private var hasStartedProcess = false
     private var isRespawning = false
     private let visualEffect = NSVisualEffectView()
+    private weak var terminalScroller: NSScroller?
+    private var scrollerObservations: [NSKeyValueObservation] = []
 
     // Terminal-view padding constraints — `constant` is updated from
     // Settings.terminalPadding so the inset can be tuned live.
@@ -42,6 +44,7 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
         terminalView.optionAsMetaKey = false
 
         addSubview(terminalView)
+        setupScrollerAutoHide()
 
         let pad = Settings.shared.terminalPadding
         terminalTopC      = terminalView.topAnchor.constraint(equalTo: topAnchor,               constant: pad)
@@ -92,6 +95,45 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
         fatalError("Not supported")
     }
 
+    // MARK: - Scroller auto-hide
+
+    /// SwiftTerm pins a legacy-style NSScroller to the terminal's right edge
+    /// that is always drawn. Locate it and drive its visibility via KVO on
+    /// the properties SwiftTerm's `updateScroller()` writes: fade in only
+    /// while scrolled up into history, fade out at the live bottom (or when
+    /// there is nothing to scroll — fresh screen, alternate buffer).
+    private func setupScrollerAutoHide() {
+        guard terminalScroller == nil,
+              let scroller = terminalView.subviews.compactMap({ $0 as? NSScroller }).first
+        else { return }
+        terminalScroller = scroller
+        scroller.scrollerStyle = .overlay
+        scroller.alphaValue = 0
+        scrollerObservations = [
+            scroller.observe(\.isEnabled) { [weak self] _, _ in self?.updateScrollerVisibility() },
+            scroller.observe(\.doubleValue) { [weak self] _, _ in self?.updateScrollerVisibility() },
+            scroller.observe(\.knobProportion) { [weak self] _, _ in self?.updateScrollerVisibility() },
+        ]
+        updateScrollerVisibility()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        // Fallback in case the scroller didn't exist yet during init.
+        setupScrollerAutoHide()
+    }
+
+    private func updateScrollerVisibility() {
+        guard let scroller = terminalScroller else { return }
+        let scrolledIntoHistory = scroller.isEnabled && scroller.doubleValue < 0.999
+        let target: CGFloat = scrolledIntoHistory ? 1 : 0
+        guard scroller.alphaValue != target else { return }
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            scroller.animator().alphaValue = target
+        }
+    }
+
     // MARK: - Settings
 
     @objc private func settingsDidChange() {
@@ -99,9 +141,14 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
     }
 
     private func applySettings() {
-        let scheme = Settings.shared.colorScheme
-        terminalView.nativeBackgroundColor = scheme.background
-        terminalView.nativeForegroundColor = scheme.foreground
+        let theme = Settings.shared.colorScheme
+        terminalView.installColors(theme.swiftTermAnsi)
+        terminalView.nativeBackgroundColor = theme.background
+        terminalView.nativeForegroundColor = theme.foreground
+        terminalView.caretColor = theme.cursor
+        // Selection colors ship at full opacity (Windows Terminal convention);
+        // SwiftTerm paints them opaque, so knock them down or they'd hide text.
+        terminalView.selectedTextBackgroundColor = theme.selection.withAlphaComponent(0.4)
         terminalView.font = Settings.shared.resolvedFont()
         terminalView.needsDisplay = true
 

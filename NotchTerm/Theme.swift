@@ -1,0 +1,147 @@
+import AppKit
+import SwiftTerm
+
+/// A complete terminal color scheme: panel background/foreground, cursor,
+/// selection, and the 16 ANSI palette entries.
+///
+/// Palette sources: the schemes bundled here are the canonical free/MIT
+/// palettes as collected by mbadolato/iTerm2-Color-Schemes; "Default" is
+/// NotchTerm's own dark look with the VS Code Dark+ ANSI palette.
+struct Theme {
+    let name: String
+    let background: NSColor
+    let foreground: NSColor
+    let cursor: NSColor
+    let selection: NSColor
+    let ansi: [NSColor]   // exactly 16: normal 0–7, bright 8–15
+
+    init(_ name: String, bg: UInt32, fg: UInt32, cursor: UInt32, selection: UInt32, ansi: [UInt32]) {
+        self.name = name
+        self.background = Self.rgb(bg)
+        self.foreground = Self.rgb(fg)
+        self.cursor = Self.rgb(cursor)
+        self.selection = Self.rgb(selection)
+        self.ansi = ansi.map(Self.rgb)
+    }
+
+    private static func rgb(_ v: UInt32) -> NSColor {
+        NSColor(srgbRed: CGFloat((v >> 16) & 0xFF) / 255,
+                green: CGFloat((v >> 8) & 0xFF) / 255,
+                blue: CGFloat(v & 0xFF) / 255,
+                alpha: 1)
+    }
+
+    /// The 16 ANSI colors converted to SwiftTerm's color type.
+    var swiftTermAnsi: [SwiftTerm.Color] {
+        ansi.map { color in
+            let c = color.usingColorSpace(.sRGB) ?? color
+            return SwiftTerm.Color(red: UInt16(c.redComponent * 65535),
+                                   green: UInt16(c.greenComponent * 65535),
+                                   blue: UInt16(c.blueComponent * 65535))
+        }
+    }
+
+    // MARK: - Lookup
+
+    /// Case-insensitive lookup for config values, with aliases for
+    /// backward compatibility and common spellings.
+    static func named(_ string: String) -> Theme? {
+        let key = string.trimmingCharacters(in: .whitespaces).lowercased()
+        if let theme = all.first(where: { $0.name.lowercased() == key }) {
+            return theme
+        }
+        let aliases: [String: String] = [
+            "catppuccin": "Catppuccin Mocha",     // pre-0.2 config name
+            "catppuccin frappé": "Catppuccin Frappe",
+            "rosé pine": "Rose Pine",
+            "rosé pine moon": "Rose Pine Moon",
+            "rosé pine dawn": "Rose Pine Dawn",
+            "tokyonight": "Tokyo Night",
+        ]
+        guard let canonical = aliases[key] else { return nil }
+        return all.first { $0.name == canonical }
+    }
+
+    static let defaultTheme = Theme("Default",
+        bg: 0x1F1F1F, fg: 0xE5E5E5, cursor: 0xE5E5E5, selection: 0x264F78,
+        ansi: [0x000000, 0xCD3131, 0x0DBC79, 0xE5E510, 0x2472C8, 0xBC3FBC, 0x11A8CD, 0xE5E5E5,
+               0x666666, 0xF14C4C, 0x23D18B, 0xF5F543, 0x3B8EEA, 0xD670D6, 0x29B8DB, 0xFFFFFF])
+
+    // MARK: - Registry
+
+    static let all: [Theme] = [
+        defaultTheme,
+        Theme("Ayu",
+              bg: 0x0B0E14, fg: 0xBFBDB6, cursor: 0xE6B450, selection: 0x409FFF,
+              ansi: [0x11151C, 0xEA6C73, 0x7FD962, 0xF9AF4F, 0x53BDFA, 0xCDA1FA, 0x90E1C6, 0xC7C7C7, 0x686868, 0xF07178, 0xAAD94C, 0xFFB454, 0x59C2FF, 0xD2A6FF, 0x95E6CB, 0xFFFFFF]),
+        Theme("Ayu Mirage",
+              bg: 0x1F2430, fg: 0xCCCAC2, cursor: 0xFFCC66, selection: 0x409FFF,
+              ansi: [0x171B24, 0xED8274, 0x87D96C, 0xFACC6E, 0x6DCBFA, 0xDABAFA, 0x90E1C6, 0xC7C7C7, 0x686868, 0xF28779, 0xD5FF80, 0xFFD173, 0x73D0FF, 0xDFBFFF, 0x95E6CB, 0xFFFFFF]),
+        Theme("Catppuccin Frappe",
+              bg: 0x303446, fg: 0xC6D0F5, cursor: 0xF2D5CF, selection: 0xF2D5CF,
+              ansi: [0x51576D, 0xE78284, 0xA6D189, 0xE5C890, 0x8CAAEE, 0xF4B8E4, 0x81C8BE, 0xB5BFE2, 0x626880, 0xEDA0A2, 0xB9DBA2, 0xECD7AE, 0xADC2F3, 0xF38ED8, 0x98D2CA, 0xA5ADCE]),
+        Theme("Catppuccin Latte",
+              bg: 0xEFF1F5, fg: 0x4C4F69, cursor: 0xDC8A78, selection: 0xDC8A78,
+              ansi: [0xBCC0CC, 0xD20F39, 0x40A02B, 0xDF8E1D, 0x1E66F5, 0xEA76CB, 0x179299, 0x5C5F77, 0xACB0BE, 0xE7103F, 0x46B02F, 0xE49931, 0x3878F6, 0xEF95D7, 0x19A1A8, 0x6C6F85]),
+        Theme("Catppuccin Macchiato",
+              bg: 0x24273A, fg: 0xCAD3F5, cursor: 0xF4DBD6, selection: 0xF4DBD6,
+              ansi: [0x494D64, 0xED8796, 0xA6DA95, 0xEED49F, 0x8AADF4, 0xF5BDE6, 0x8BD5CA, 0xB8C0E0, 0x5B6078, 0xF2A7B2, 0xBDE3B0, 0xF4E3C1, 0xADC5F7, 0xF493DA, 0xA5DED6, 0xA5ADCB]),
+        Theme("Catppuccin Mocha",
+              bg: 0x1E1E2E, fg: 0xCDD6F4, cursor: 0xF5E0DC, selection: 0xF5E0DC,
+              ansi: [0x45475A, 0xF38BA8, 0xA6E3A1, 0xF9E2AF, 0x89B4FA, 0xF5C2E7, 0x94E2D5, 0xBAC2DE, 0x585B70, 0xF7AEC2, 0xC2ECBF, 0xFCD682, 0xAECCFC, 0xF398DA, 0xB1EAE1, 0xA6ADC8]),
+        Theme("Dracula",
+              bg: 0x282A36, fg: 0xF8F8F2, cursor: 0xF8F8F2, selection: 0x44475A,
+              ansi: [0x21222C, 0xFF5555, 0x50FA7B, 0xF1FA8C, 0xBD93F9, 0xFF79C6, 0x8BE9FD, 0xF8F8F2, 0x6272A4, 0xFF6E6E, 0x69FF94, 0xFFFFA5, 0xD6ACFF, 0xFF92DF, 0xA4FFFF, 0xFFFFFF]),
+        Theme("Everforest Dark",
+              bg: 0x232A2E, fg: 0xD3C6AA, cursor: 0xE69875, selection: 0x543A48,
+              ansi: [0x7A8478, 0xE67E80, 0xA7C080, 0xDBBC7F, 0x7FBBB3, 0xD699B6, 0x83C092, 0xF2EFDF, 0xA6B0A0, 0xF85552, 0x8DA101, 0xDFA000, 0x3A94C5, 0xDF69BA, 0x35A77C, 0xFFFBEF]),
+        Theme("GitHub Dark",
+              bg: 0x0D1117, fg: 0xE6EDF3, cursor: 0x2F81F7, selection: 0xE6EDF3,
+              ansi: [0x484F58, 0xFF7B72, 0x3FB950, 0xD29922, 0x58A6FF, 0xBC8CFF, 0x39C5CF, 0xB1BAC4, 0x6E7681, 0xFFA198, 0x56D364, 0xE3B341, 0x79C0FF, 0xD2A8FF, 0x56D4DD, 0xFFFFFF]),
+        Theme("GitHub Light",
+              bg: 0xFFFFFF, fg: 0x1F2328, cursor: 0x0969DA, selection: 0x1F2328,
+              ansi: [0x24292F, 0xCF222E, 0x116329, 0x4D2D00, 0x0969DA, 0x8250DF, 0x1B7C83, 0x6E7781, 0x57606A, 0xA40E26, 0x1A7F37, 0x633C01, 0x218BFF, 0xA475F9, 0x3192AA, 0x8C959F]),
+        Theme("Gruvbox Dark",
+              bg: 0x282828, fg: 0xEBDBB2, cursor: 0xEBDBB2, selection: 0x665C54,
+              ansi: [0x282828, 0xCC241D, 0x98971A, 0xD79921, 0x458588, 0xB16286, 0x689D6A, 0xA89984, 0x928374, 0xFB4934, 0xB8BB26, 0xFABD2F, 0x83A598, 0xD3869B, 0x8EC07C, 0xEBDBB2]),
+        Theme("Gruvbox Light",
+              bg: 0xFBF1C7, fg: 0x3C3836, cursor: 0x3C3836, selection: 0x3C3836,
+              ansi: [0xFBF1C7, 0xCC241D, 0x98971A, 0xD79921, 0x458588, 0xB16286, 0x689D6A, 0x7C6F64, 0x928374, 0x9D0006, 0x79740E, 0xB57614, 0x076678, 0x8F3F71, 0x427B58, 0x3C3836]),
+        Theme("Monokai",
+              bg: 0x272822, fg: 0xFDFFF1, cursor: 0xC0C1B5, selection: 0x57584F,
+              ansi: [0x272822, 0xF92672, 0xA6E22E, 0xE6DB74, 0xFD971F, 0xAE81FF, 0x66D9EF, 0xFDFFF1, 0x6E7066, 0xF92672, 0xA6E22E, 0xE6DB74, 0xFD971F, 0xAE81FF, 0x66D9EF, 0xFDFFF1]),
+        Theme("Nord",
+              bg: 0x2E3440, fg: 0xD8DEE9, cursor: 0xECEFF4, selection: 0xECEFF4,
+              ansi: [0x3B4252, 0xBF616A, 0xA3BE8C, 0xEBCB8B, 0x81A1C1, 0xB48EAD, 0x88C0D0, 0xE5E9F0, 0x596377, 0xBF616A, 0xA3BE8C, 0xEBCB8B, 0x81A1C1, 0xB48EAD, 0x8FBCBB, 0xECEFF4]),
+        Theme("One Dark",
+              bg: 0x21252B, fg: 0xABB2BF, cursor: 0xABB2BF, selection: 0x323844,
+              ansi: [0x21252B, 0xE06C75, 0x98C379, 0xE5C07B, 0x61AFEF, 0xC678DD, 0x56B6C2, 0xABB2BF, 0x767676, 0xE06C75, 0x98C379, 0xE5C07B, 0x61AFEF, 0xC678DD, 0x56B6C2, 0xABB2BF]),
+        Theme("One Light",
+              bg: 0xF9F9F9, fg: 0x2A2C33, cursor: 0xBBBBBB, selection: 0xEDEDED,
+              ansi: [0x000000, 0xDE3E35, 0x3F953A, 0xD2B67C, 0x2F5AF3, 0x950095, 0x3F953A, 0xBBBBBB, 0x000000, 0xDE3E35, 0x3F953A, 0xD2B67C, 0x2F5AF3, 0xA00095, 0x3F953A, 0xFFFFFF]),
+        Theme("Rose Pine",
+              bg: 0x191724, fg: 0xE0DEF4, cursor: 0xE0DEF4, selection: 0x403D52,
+              ansi: [0x26233A, 0xEB6F92, 0x31748F, 0xF6C177, 0x9CCFD8, 0xC4A7E7, 0xEBBCBA, 0xE0DEF4, 0x6E6A86, 0xEB6F92, 0x31748F, 0xF6C177, 0x9CCFD8, 0xC4A7E7, 0xEBBCBA, 0xE0DEF4]),
+        Theme("Rose Pine Dawn",
+              bg: 0xFAF4ED, fg: 0x575279, cursor: 0x575279, selection: 0xDFDAD9,
+              ansi: [0xF2E9E1, 0xB4637A, 0x286983, 0xEA9D34, 0x56949F, 0x907AA9, 0xD7827E, 0x575279, 0x9893A5, 0xB4637A, 0x286983, 0xEA9D34, 0x56949F, 0x907AA9, 0xD7827E, 0x575279]),
+        Theme("Rose Pine Moon",
+              bg: 0x232136, fg: 0xE0DEF4, cursor: 0xE0DEF4, selection: 0x44415A,
+              ansi: [0x393552, 0xEB6F92, 0x3E8FB0, 0xF6C177, 0x9CCFD8, 0xC4A7E7, 0xEA9A97, 0xE0DEF4, 0x6E6A86, 0xEB6F92, 0x3E8FB0, 0xF6C177, 0x9CCFD8, 0xC4A7E7, 0xEA9A97, 0xE0DEF4]),
+        Theme("Snazzy",
+              bg: 0x1E1F29, fg: 0xEBECE6, cursor: 0xE4E4E4, selection: 0x81AEC6,
+              ansi: [0x000000, 0xFC4346, 0x50FB7C, 0xF0FB8C, 0x49BAFF, 0xFC4CB4, 0x8BE9FE, 0xEDEDEC, 0x555555, 0xFC4346, 0x50FB7C, 0xF0FB8C, 0x49BAFF, 0xFC4CB4, 0x8BE9FE, 0xEDEDEC]),
+        Theme("Solarized Dark",
+              bg: 0x002B36, fg: 0x839496, cursor: 0x839496, selection: 0x073642,
+              ansi: [0x073642, 0xDC322F, 0x859900, 0xB58900, 0x268BD2, 0xD33682, 0x2AA198, 0xEEE8D5, 0x335E69, 0xCB4B16, 0x586E75, 0x657B83, 0x839496, 0x6C71C4, 0x93A1A1, 0xFDF6E3]),
+        Theme("Solarized Light",
+              bg: 0xFDF6E3, fg: 0x657B83, cursor: 0x657B83, selection: 0xEEE8D5,
+              ansi: [0x073642, 0xDC322F, 0x859900, 0xB58900, 0x268BD2, 0xD33682, 0x2AA198, 0xBBB5A2, 0x002B36, 0xCB4B16, 0x586E75, 0x657B83, 0x839496, 0x6C71C4, 0x93A1A1, 0xFDF6E3]),
+        Theme("Tokyo Night",
+              bg: 0x1A1B26, fg: 0xC0CAF5, cursor: 0xC0CAF5, selection: 0x33467C,
+              ansi: [0x15161E, 0xF7768E, 0x9ECE6A, 0xE0AF68, 0x7AA2F7, 0xBB9AF7, 0x7DCFFF, 0xA9B1D6, 0x414868, 0xF7768E, 0x9ECE6A, 0xE0AF68, 0x7AA2F7, 0xBB9AF7, 0x7DCFFF, 0xC0CAF5]),
+        Theme("Tokyo Night Storm",
+              bg: 0x24283B, fg: 0xC0CAF5, cursor: 0xC0CAF5, selection: 0x364A82,
+              ansi: [0x1D202F, 0xF7768E, 0x9ECE6A, 0xE0AF68, 0x7AA2F7, 0xBB9AF7, 0x7DCFFF, 0xA9B1D6, 0x4E5575, 0xF7768E, 0x9ECE6A, 0xE0AF68, 0x7AA2F7, 0xBB9AF7, 0x7DCFFF, 0xC0CAF5]),
+    ]
+}

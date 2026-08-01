@@ -1,41 +1,6 @@
 import AppKit
 import UniformTypeIdentifiers
 
-// MARK: - Color scheme presets
-
-enum ColorSchemePreset: String, CaseIterable {
-    case `default`     = "Default"
-    case dracula       = "Dracula"
-    case catppuccin    = "Catppuccin"
-    case solarizedDark = "Solarized Dark"
-    case oneDark       = "One Dark"
-
-    var background: NSColor {
-        switch self {
-        case .default:       return NSColor(white: 0.12, alpha: 1)
-        case .dracula:       return NSColor(srgbRed: 0x28/255, green: 0x2A/255, blue: 0x36/255, alpha: 1)
-        case .catppuccin:    return NSColor(srgbRed: 0x1E/255, green: 0x1E/255, blue: 0x2E/255, alpha: 1)
-        case .solarizedDark: return NSColor(srgbRed: 0x00/255, green: 0x2B/255, blue: 0x36/255, alpha: 1)
-        case .oneDark:       return NSColor(srgbRed: 0x28/255, green: 0x2C/255, blue: 0x34/255, alpha: 1)
-        }
-    }
-
-    var foreground: NSColor {
-        switch self {
-        case .default:       return NSColor(white: 0.9, alpha: 1)
-        case .dracula:       return NSColor(srgbRed: 0xF8/255, green: 0xF8/255, blue: 0xF2/255, alpha: 1)
-        case .catppuccin:    return NSColor(srgbRed: 0xCD/255, green: 0xD6/255, blue: 0xF4/255, alpha: 1)
-        case .solarizedDark: return NSColor(srgbRed: 0x83/255, green: 0x94/255, blue: 0x96/255, alpha: 1)
-        case .oneDark:       return NSColor(srgbRed: 0xAB/255, green: 0xB2/255, blue: 0xBF/255, alpha: 1)
-        }
-    }
-
-    /// Case-insensitive lookup for config file values (e.g. "dracula", "Solarized Dark").
-    static func from(_ string: String) -> ColorSchemePreset? {
-        allCases.first { $0.rawValue.lowercased() == string.lowercased() }
-    }
-}
-
 // MARK: - Settings
 
 /// Reads configuration from `~/.config/notchterm/notchterm.conf`.
@@ -71,9 +36,9 @@ final class Settings {
         return CGFloat(max(8, min(36, v)))
     }
 
-    var colorScheme: ColorSchemePreset {
-        guard let s = parsed["theme"] else { return .default }
-        return ColorSchemePreset.from(s) ?? .default
+    var colorScheme: Theme {
+        guard let s = parsed["theme"] else { return .defaultTheme }
+        return Theme.named(s) ?? .defaultTheme
     }
 
     var opacity: Double {
@@ -108,7 +73,7 @@ final class Settings {
 
     /// Panel width in points, read from config.
     var panelWidth: CGFloat {
-        guard let s = parsed["width"], let v = Double(s) else { return 600 }
+        guard let s = parsed["width"], let v = Double(s) else { return 1000 }
         return CGFloat(max(300, v))
     }
 
@@ -122,7 +87,7 @@ final class Settings {
     /// Inner padding in points applied between the panel edges and the
     /// terminal view. Range: 0–40.
     var terminalPadding: CGFloat {
-        guard let s = parsed["terminal-padding"], let v = Double(s) else { return 6 }
+        guard let s = parsed["terminal-padding"], let v = Double(s) else { return 0 }
         return CGFloat(max(0, min(40, v)))
     }
 
@@ -264,7 +229,7 @@ final class Settings {
     /// Current canonical config layout version. Bump when keys are added or
     /// the template changes; files without the matching marker are rewritten
     /// in canonical form (existing values preserved).
-    private static let configFormat = 2
+    private static let configFormat = 3
 
     /// All keys the template knows how to place. Anything else the user
     /// added by hand survives migration under an "Other" section.
@@ -288,6 +253,24 @@ final class Settings {
             return kv + pad + "# " + comment
         }
 
+        /// Theme names from the registry, wrapped into comment lines so the
+        /// list never goes stale as themes are added.
+        func themeListComment() -> String {
+            var lines: [String] = []
+            var current = "#   "
+            for name in Theme.all.map(\.name) {
+                let piece = current == "#   " ? name : ", " + name
+                if current.count + piece.count > 70 {
+                    lines.append(current + ",")
+                    current = "#   " + name
+                } else {
+                    current += piece
+                }
+            }
+            lines.append(current)
+            return lines.joined(separator: "\n")
+        }
+
         let defaultShell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
 
         var content = """
@@ -306,8 +289,10 @@ final class Settings {
 
 
         # ── Appearance ────────────────────────────────────────────────────
+        # theme: any of the built-in color schemes:
+        \(themeListComment())
 
-        \(line("theme", "Default", "Default | Dracula | Catppuccin | Solarized Dark | One Dark"))
+        \(line("theme", "Default"))
         \(line("opacity", "1.0", "0.1 – 1.0"))
         \(line("cursor-style", "block", "block | underline | bar"))
         \(line("cursor-blink", "false", "true | false"))
@@ -321,9 +306,9 @@ final class Settings {
 
         # ── Window ────────────────────────────────────────────────────────
 
-        \(line("width", "600", "points (min 300)"))
+        \(line("width", "1000", "points (min 300)"))
         \(line("height", "400", "points; 0 = 40% of screen height"))
-        \(line("terminal-padding", "6", "inner inset, 0–40"))
+        \(line("terminal-padding", "0", "inner inset, 0–40"))
         \(line("notch-gap", "0", "gap below the notch, 0–50"))
         """
 

@@ -5,7 +5,7 @@ import AppKit
 /// left or right, keeping the panel centered on the notch at all times.
 final class TerminalPanel: NSPanel, NSWindowDelegate {
 
-    static let defaultWidth: CGFloat       = 600
+    static let defaultWidth: CGFloat       = 1000
     static let defaultHeightRatio: CGFloat = 0.4
     static let minWidth: CGFloat           = 300
     static let minHeight: CGFloat          = 150
