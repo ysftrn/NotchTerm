@@ -99,7 +99,7 @@ All themes include complete 16-color ANSI palettes plus matching cursor and sele
 
 ## Privacy
 
-NotchTerm runs entirely on your machine. No analytics, no network calls, no account. The Accessibility permission is used solely to observe the mouse position for the hover trigger.
+NotchTerm runs entirely on your machine and **does not log, record, or transmit any user information — ever**. No keystroke logging, no screen recording, no analytics, no telemetry, no crash reporting, no network calls, no account. The Accessibility permission is used solely to observe the mouse position for the hover trigger, and everything the app does is auditable in this repository.
 
 ## Credits
 
