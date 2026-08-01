@@ -4,8 +4,11 @@ import ServiceManagement
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
-    private(set) var notchInfo: NotchInfo?
-    private var notchTriggerMonitor: MouseMonitor?
+    /// One trigger zone per connected screen (real notch or phantom).
+    private(set) var notchInfos: [NotchInfo] = []
+    /// The zone the panel is currently anchored to.
+    private(set) var activeInfo: NotchInfo?
+    private var triggerMonitors: [MouseMonitor] = []
     private var panelDismissMonitor: MouseMonitor?
     private var menuShortcutMonitor: Any?
     private var terminalPanel: TerminalPanel?
@@ -72,29 +75,48 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    // MARK: - Notch detection
+    // MARK: - Trigger zone detection
 
+    /// Builds a trigger zone for every connected screen: the physical notch
+    /// where one exists, a phantom notch at the top-center everywhere else.
+    /// The panel shows on whichever screen's zone the mouse enters.
     private func detectNotch() {
-        notchInfo = NotchDetector.detect()
+        // Screen topology changed mid-session — hide first so stale dismiss
+        // rects can't strand a visible panel.
+        if isPanelVisible {
+            hideTerminalPanel()
+        }
 
-        if let info = notchInfo {
-            print("[NotchTerm] Notch detected on screen '\(info.screen.localizedName)'")
-            print("[NotchTerm]   notchRect   : \(info.notchRect)")
-            print("[NotchTerm]   menuBarRect : \(info.menuBarRect)")
-            setupTerminalPanel(notchInfo: info)
-            if AXIsProcessTrusted() {
-                startNotchTriggerMonitor(notchRect: info.notchRect)
-            }
-        } else {
-            print("[NotchTerm] No notch detected — running on non-notch hardware or external display only.")
-            notchTriggerMonitor?.stop()
-            notchTriggerMonitor = nil
-            panelDismissMonitor?.stop()
-            panelDismissMonitor = nil
-            isPanelVisible = false
+        notchInfos = NotchDetector.detectAll()
+        for info in notchInfos {
+            let kind = info.hasNotch ? "notch" : "phantom notch"
+            print("[NotchTerm] \(kind) on screen '\(info.screen.localizedName)': \(info.notchRect)")
+        }
+
+        guard !notchInfos.isEmpty else {
+            print("[NotchTerm] No screens available.")
+            stopTriggerMonitors()
+            stopPanelDismissMonitor()
+            activeInfo = nil
             terminalPanel?.hidePanel()
             terminalPanel = nil
+            return
         }
+
+        // Re-anchor to the same screen when it survived the change,
+        // otherwise fall back to the main screen.
+        let mainInfo = notchInfos.first { $0.screen == NSScreen.main } ?? notchInfos[0]
+        if let current = activeInfo,
+           let match = notchInfos.first(where: { $0.screen.frame == current.screen.frame }) {
+            activeInfo = match
+        } else {
+            activeInfo = mainInfo
+        }
+
+        if let info = activeInfo {
+            setupTerminalPanel(notchInfo: info)
+        }
+        rebuildTriggerMonitors()
     }
 
     @objc private func screensDidChange() {
@@ -102,7 +124,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func settingsDidChange() {
-        if let info = notchInfo {
+        if let info = activeInfo {
             terminalPanel?.reposition(using: info)
         }
     }
@@ -124,31 +146,37 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: - Mouse monitors
 
-    /// Global + local monitor on the notch rect. Fires onEnter to show the panel.
-    /// Needs both monitors because after hidePanel() NotchTerm may still be
-    /// the frontmost app, and a global-only monitor won't fire in that case.
-    private func startNotchTriggerMonitor(notchRect: CGRect) {
-        // Extend 5 pts past the screen's top edge so the cursor hitting the
-        // physical boundary doesn't miss the notch region.
-        var watchRect = notchRect
-        watchRect.size.height += 5
+    /// One global + local monitor per screen's trigger zone. Fires onEnter
+    /// to show the panel on that zone's screen. Needs both monitor kinds
+    /// because after hidePanel() NotchTerm may still be the frontmost app,
+    /// and a global-only monitor won't fire in that case.
+    private func rebuildTriggerMonitors() {
+        stopTriggerMonitors()
+        guard AXIsProcessTrusted() else { return }
 
-        if let existing = notchTriggerMonitor {
-            existing.watchRect = watchRect
-            return
+        for info in notchInfos {
+            // Extend 5 pts past the screen's top edge so the cursor hitting
+            // the physical boundary doesn't miss the zone.
+            var watchRect = info.notchRect
+            watchRect.size.height += 5
+
+            let monitor = MouseMonitor(watchRect: watchRect, includesLocalMonitor: true)
+            monitor.onEnter = { [weak self] in self?.showTerminalPanel(on: info) }
+            monitor.start()
+            triggerMonitors.append(monitor)
         }
+    }
 
-        let monitor = MouseMonitor(watchRect: watchRect, includesLocalMonitor: true)
-        monitor.onEnter = { [weak self] in self?.showTerminalPanel() }
-        monitor.start()
-        notchTriggerMonitor = monitor
+    private func stopTriggerMonitors() {
+        triggerMonitors.forEach { $0.stop() }
+        triggerMonitors = []
     }
 
     /// Global + local monitor covering the panel frame and the notch rect as two
     /// independent zones. The cursor must leave BOTH before hide fires, giving a
     /// non-rectangular boundary that matches the actual notch width at the top.
     private func startPanelDismissMonitor() {
-        guard let panel = terminalPanel, let info = notchInfo else { return }
+        guard let panel = terminalPanel, let info = activeInfo else { return }
 
         // Extend notch 5 pts upward so hitting the physical screen edge is safe.
         var notchRect = info.notchRect
@@ -183,9 +211,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         panelDismissMonitor = nil
     }
 
-    private func showTerminalPanel() {
+    private func showTerminalPanel(on info: NotchInfo) {
         guard !isPanelVisible else { return }
         isPanelVisible = true
+
+        // Anchor to the screen whose zone was hovered. Only reposition on an
+        // actual screen change so manual panel resizes survive same-screen
+        // show/hide cycles.
+        if activeInfo?.screen.frame != info.screen.frame {
+            terminalPanel?.reposition(using: info)
+        }
+        activeInfo = info
+
         // Stop the dismiss monitor before the animation starts so expanding
         // frames don't fire false exit events mid-animation.
         stopPanelDismissMonitor()
@@ -203,9 +240,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         stopPanelDismissMonitor()
         stopMenuShortcutMonitor()
         terminalPanel?.hidePanel { [weak self] in
-            // Reset trigger monitor only after panel is fully hidden so a hover
+            // Reset trigger monitors only after panel is fully hidden so a hover
             // during the contraction animation can't re-open prematurely.
-            self?.notchTriggerMonitor?.resetState()
+            self?.triggerMonitors.forEach { $0.resetState() }
         }
     }
 
@@ -296,7 +333,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Welcome window
 
     private func showWelcomeWindow() {
-        let wc = WelcomeWindowController(notchCenterX: notchInfo?.notchRect.midX)
+        let wc = WelcomeWindowController(notchCenterX: activeInfo?.notchRect.midX)
         wc.onGetStarted = { [weak self] in
             UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
             self?.welcomeWindowController = nil
@@ -349,9 +386,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 timer.invalidate()
                 self?.accessibilityPollTimer = nil
                 print("[NotchTerm] Accessibility access granted (detected via polling).")
-                if let info = self?.notchInfo {
-                    self?.startNotchTriggerMonitor(notchRect: info.notchRect)
-                }
+                self?.rebuildTriggerMonitors()
             }
         }
     }
