@@ -80,44 +80,16 @@
   }
   .meta { margin-top: 18px; color: var(--fg-dim); font-size: .9rem; }
 
-  /* ── Fake terminal ─────────────────────────────────────────── */
-  .term {
+  /* ── Demo recording ────────────────────────────────────────── */
+  .demo {
+    display: block;
     max-width: 720px;
+    width: 100%;
     margin: -18px auto 0;
-    background: rgba(26, 29, 39, .92);
     border: 1px solid var(--border);
     border-radius: 12px;
     box-shadow: 0 30px 80px rgba(0,0,0,.55);
-    text-align: left;
-    overflow: hidden;
-    font-family: var(--mono);
-    font-size: .88rem;
   }
-  .term-body { padding: 18px 20px 22px; }
-  .term-body .ln { display: block; white-space: pre-wrap; }
-  .p  { color: var(--green); }
-  .c  { color: var(--fg); }
-  .d  { color: var(--fg-dim); }
-  .b  { color: var(--accent); }
-  .cursor {
-    display: inline-block; width: 8px; height: 1.05em;
-    background: var(--fg); vertical-align: text-bottom;
-    animation: blink 1.1s steps(1) infinite;
-  }
-  @keyframes blink { 50% { opacity: 0; } }
-  .term-tabs {
-    display: flex;
-    border-top: 1px solid var(--border);
-    background: #12141c;
-    font-size: .78rem;
-  }
-  .term-tab {
-    padding: 7px 22px;
-    color: var(--fg-dim);
-    border-right: 1px solid var(--border);
-  }
-  .term-tab.active { background: rgba(26,29,39,.92); color: var(--fg); }
-  .term-tab.plus { border-right: none; margin-left: auto; padding: 7px 16px; }
 
   /* ── Sections ──────────────────────────────────────────────── */
   section { max-width: 880px; margin: 0 auto; padding: 56px 24px; }
@@ -201,21 +173,7 @@
 <div class="notch"></div>
 
 <div class="hero">
-  <div class="term" aria-hidden="true">
-    <div class="term-body">
-      <span class="ln"><span class="p">~ ❯</span> <span class="c">hover the notch</span></span>
-      <span class="ln"><span class="d"># a terminal drops down. move away — it hides.</span></span>
-      <span class="ln"><span class="d"># your shell keeps running the whole time.</span></span>
-      <span class="ln"><span class="p">~ ❯</span> <span class="b">git</span> <span class="c">push origin main</span></span>
-      <span class="ln"><span class="p">~ ❯</span> <span class="cursor"></span></span>
-    </div>
-    <div class="term-tabs">
-      <div class="term-tab active">zsh</div>
-      <div class="term-tab">htop</div>
-      <div class="term-tab">ssh</div>
-      <div class="term-tab plus">+</div>
-    </div>
-  </div>
+  <img class="demo" src="notchTerm.gif" alt="NotchTerm demo: hovering the notch drops down a terminal with tabs and live theme switching">
 
   <h1 style="margin-top:36px">NotchTerm</h1>
   <p class="tag">A terminal that lives in your notch.<br>Hover to show. Move away to hide. Nothing to remember.</p>

@@ -2,6 +2,8 @@
 
 **A terminal that lives in your notch.** Hover your mouse over the MacBook notch and a terminal drops down. Move away and it hides. Your shell keeps running the whole time.
 
+![NotchTerm demo](docs/notchTerm.gif)
+
 No Dock icon, no keyboard shortcut to remember, no window management — just a flick of the wrist.
 
 - **Website & docs:** https://ysftrn.github.io/NotchTerm/
