@@ -13,6 +13,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var panelDismissMonitor: MouseMonitor?
     private var menuShortcutMonitor: Any?
     private var terminalPanel: TerminalPanel?
+    /// Buffer-coordinate range of the most recent mouse drag made *without*
+    /// Option while a mouse-tracking app owned the click (see
+    /// `handleTerminalMouseEvent`). Cmd+C reads this to copy the text under
+    /// an app-drawn selection that SwiftTerm itself never saw. Scoped to the
+    /// view it was recorded against so a stale range can't leak across a
+    /// tab switch.
+    private var pendingCopyRange: (start: Position, end: Position)?
+    private weak var pendingCopyTerminalView: LocalProcessTerminalView?
     private var accessibilityPollTimer: Timer?
     private var welcomeWindowController: WelcomeWindowController?
     private var isPanelVisible = false
@@ -256,11 +264,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// the panel is shown.
     private func startMenuShortcutMonitor() {
         guard menuShortcutMonitor == nil else { return }
-        menuShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .scrollWheel]) { [weak self] event in
+        menuShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .scrollWheel, .leftMouseDown, .leftMouseUp]) { [weak self] event in
             guard let self else { return event }
 
             if event.type == .scrollWheel {
                 return self.handleTerminalScrollWheel(event)
+            }
+
+            if event.type == .leftMouseDown || event.type == .leftMouseUp {
+                self.handleTerminalMouseEvent(event)
+                return event
             }
 
             let chars = event.charactersIgnoringModifiers?.lowercased() ?? ""
@@ -331,7 +344,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                     }
                     return nil
                 case "c":
-                    NSApp.sendAction(#selector(NSText.copy(_:)), to: self.terminalPanel?.terminalContent?.terminalView, from: nil)
+                    self.copyFromTerminal()
                     return nil
                 default:
                     break
@@ -348,6 +361,97 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             return event
         }
+    }
+
+    /// Full-screen TUIs that turn on mouse tracking (claude-code, nvim's
+    /// `mouse=nvi`, htop) capture every click and drag for their own UI, so
+    /// SwiftTerm never starts a local text selection — Cmd+C then has
+    /// nothing to copy. Two ways out, both driven from the same mouseDown/
+    /// mouseUp pair:
+    ///
+    /// - Holding Option bypasses mouse reporting for that click entirely
+    ///   (matching iTerm2/Terminal.app), so SwiftTerm falls into its own
+    ///   selection path and `copyFromTerminal()`'s native fallback picks it
+    ///   up via `NSText.copy`.
+    /// - A *plain* drag still has to reach the app (so e.g. tmux pane
+    ///   switching and vim's mouse mode keep working), but its start/end
+    ///   grid position is recorded in `pendingCopyRange` regardless, so
+    ///   Cmd+C can independently read the covered text straight out of the
+    ///   terminal buffer without disturbing whatever the app itself is
+    ///   doing with the same click.
+    private func handleTerminalMouseEvent(_ event: NSEvent) {
+        guard event.window === terminalPanel,
+              let terminalView = terminalPanel?.terminalContent?.terminalView,
+              let terminal = terminalView.terminal
+        else { return }
+
+        let appIsTrackingMouse = terminal.mouseMode != .off
+
+        if event.type == .leftMouseDown {
+            let optionHeld = event.modifierFlags.contains(.option)
+            terminalView.allowMouseReporting = !optionHeld
+
+            if appIsTrackingMouse, !optionHeld {
+                let pos = gridPosition(for: event, in: terminalView, terminal: terminal)
+                pendingCopyRange = (pos, pos)
+                pendingCopyTerminalView = terminalView
+            } else {
+                pendingCopyRange = nil
+            }
+            return
+        }
+
+        // leftMouseUp
+        if appIsTrackingMouse, pendingCopyTerminalView === terminalView, let range = pendingCopyRange {
+            let end = gridPosition(for: event, in: terminalView, terminal: terminal)
+            // A plain click with no drag isn't a selection — drop it so a
+            // stray click can't leave a stale one-character range behind.
+            pendingCopyRange = end == range.start ? nil : (range.start, end)
+        }
+        // Restore after this run-loop turn so the up-click still sees the
+        // value set on mouse-down (dispatch happens synchronously right
+        // after this monitor returns the event).
+        DispatchQueue.main.async {
+            terminalView.allowMouseReporting = true
+        }
+    }
+
+    /// Same cell math SwiftTerm uses internally for its own hit-testing
+    /// (private there), reimplemented here — see `handleTerminalScrollWheel`
+    /// for the sibling case that needs the same conversion.
+    private func gridPosition(for event: NSEvent, in terminalView: LocalProcessTerminalView, terminal: Terminal) -> Position {
+        let point = terminalView.convert(event.locationInWindow, from: nil)
+        let colWidth = terminalView.bounds.width / CGFloat(max(terminal.cols, 1))
+        let rowHeight = terminalView.bounds.height / CGFloat(max(terminal.rows, 1))
+        let col = min(max(0, Int(point.x / colWidth)), terminal.cols - 1)
+        let row = min(max(0, Int((terminalView.bounds.height - point.y) / rowHeight)), terminal.rows - 1)
+        return Position(col: col, row: row)
+    }
+
+    /// Cmd+C. Prefers the app-drawn selection captured in `pendingCopyRange`
+    /// (see `handleTerminalMouseEvent`) since that's the only signal
+    /// available while a mouse-tracking TUI owns clicks; falls back to
+    /// SwiftTerm's own native selection (populated by an Option-held drag,
+    /// or by any plain-shell-prompt selection) otherwise.
+    private func copyFromTerminal() {
+        guard let terminalView = terminalPanel?.terminalContent?.terminalView,
+              let terminal = terminalView.terminal
+        else { return }
+
+        if terminal.mouseMode != .off,
+           pendingCopyTerminalView === terminalView,
+           let range = pendingCopyRange {
+            let (start, end) = Position.compare(range.start, range.end) == .after
+                ? (range.end, range.start) : (range.start, range.end)
+            let text = terminal.getText(start: start, end: end)
+            if !text.isEmpty {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
+                return
+            }
+        }
+
+        NSApp.sendAction(#selector(NSText.copy(_:)), to: terminalView, from: nil)
     }
 
     /// Full-screen TUIs (claude-code, vim, htop, …) run in the terminal's
