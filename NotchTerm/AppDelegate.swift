@@ -1,6 +1,7 @@
 import AppKit
 import CoreText
 import ServiceManagement
+import SwiftTerm
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
@@ -255,8 +256,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// the panel is shown.
     private func startMenuShortcutMonitor() {
         guard menuShortcutMonitor == nil else { return }
-        menuShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+        menuShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .scrollWheel]) { [weak self] event in
             guard let self else { return event }
+
+            if event.type == .scrollWheel {
+                return self.handleTerminalScrollWheel(event)
+            }
 
             let chars = event.charactersIgnoringModifiers?.lowercased() ?? ""
             let pressed = event.modifierFlags.intersection([.command, .option, .shift, .control])
@@ -343,6 +348,70 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             return event
         }
+    }
+
+    /// Full-screen TUIs (claude-code, vim, htop, …) run in the terminal's
+    /// alternate screen buffer, which has no scrollback of its own, so
+    /// SwiftTerm's own `scrollWheel` (which just moves the scrollback
+    /// viewport) is a no-op there. What the wheel should do instead depends
+    /// on whether the app asked for mouse tracking (nvim's default
+    /// `mouse=nvi`, Claude Code's TUI, htop with mouse support): if so, it
+    /// wants real wheel-button reports so it can route the scroll to the
+    /// right pane; otherwise xterm's convention is to translate wheel motion
+    /// into arrow-key presses. Falls through untouched on the primary buffer
+    /// (normal scrollback), where SwiftTerm's default handling is correct.
+    private func handleTerminalScrollWheel(_ event: NSEvent) -> NSEvent? {
+        guard event.window === terminalPanel,
+              event.deltaY != 0,
+              let terminalView = terminalPanel?.terminalContent?.terminalView,
+              let terminal = terminalView.terminal
+        else { return event }
+
+        guard terminal.isCurrentBufferAlternate else { return event }
+
+        let absDelta = Int(abs(event.deltaY).rounded(.up))
+        let presses: Int
+        switch absDelta {
+        case ..<2: presses = 1
+        case 2...5: presses = 3
+        case 6...9: presses = 10
+        default: presses = max(terminal.rows, 20)
+        }
+
+        if terminal.mouseMode != .off && terminalView.allowMouseReporting {
+            let flags = event.modifierFlags
+            let buttonFlags = terminal.encodeButton(
+                button: event.deltaY > 0 ? 4 : 5, release: false,
+                shift: flags.contains(.shift), meta: flags.contains(.option),
+                control: flags.contains(.control))
+
+            let point = terminalView.convert(event.locationInWindow, from: nil)
+            let colWidth = terminalView.bounds.width / CGFloat(max(terminal.cols, 1))
+            let rowHeight = terminalView.bounds.height / CGFloat(max(terminal.rows, 1))
+            let col = min(max(0, Int(point.x / colWidth)), terminal.cols - 1)
+            let row = min(max(0, Int((terminalView.bounds.height - point.y) / rowHeight)), terminal.rows - 1)
+
+            // Sent as SGR (CSI <) directly rather than via `terminal.sendEvent`,
+            // which encodes using whatever protocol SwiftTerm privately
+            // negotiated — defaulting to legacy X10 unless the app explicitly
+            // requested SGR (DECSET 1006). SGR is what every modern terminal
+            // emits regardless, so this matches what the app actually expects
+            // instead of trusting that negotiation.
+            let report = "\u{1b}[<\(buttonFlags);\(col + 1);\(row + 1)M"
+            for _ in 0..<presses {
+                terminalView.send(txt: report)
+            }
+            return nil
+        }
+
+        let sequence = event.deltaY > 0
+            ? (terminal.applicationCursor ? EscapeSequences.moveUpApp : EscapeSequences.moveUpNormal)
+            : (terminal.applicationCursor ? EscapeSequences.moveDownApp : EscapeSequences.moveDownNormal)
+
+        for _ in 0..<presses {
+            terminalView.send(sequence)
+        }
+        return nil
     }
 
     private func stopMenuShortcutMonitor() {

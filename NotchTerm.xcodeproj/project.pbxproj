@@ -377,10 +377,10 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		10912FAE2F91318C004E0158 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
+			repositoryURL = "https://github.com/ysftrn/SwiftTerm";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.5.0;
+				kind = branch;
+				branch = "notchterm-margin-fix";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
