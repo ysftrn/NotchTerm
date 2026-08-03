@@ -245,6 +245,11 @@ final class TerminalContentView: NSView, LocalProcessTerminalViewDelegate {
         var env = ProcessInfo.processInfo.environment
         env["TERM"] = "xterm-256color"
         env["COLORTERM"] = "truecolor"
+        // TERM_PROGRAM/TERM_PROGRAM_VERSION is the de facto convention other
+        // terminals (Ghostty, iTerm2, WezTerm, VSCode, …) use to identify
+        // themselves to apps running inside them (e.g. claude-code's status line).
+        env["TERM_PROGRAM"] = "NotchTerm"
+        env["TERM_PROGRAM_VERSION"] = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
         // Ensure LANG is set for proper UTF-8 support.
         if env["LANG"] == nil {
             env["LANG"] = "en_US.UTF-8"
